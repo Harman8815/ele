@@ -27,12 +27,14 @@
        FILE SECTION.
 
        FD TI01-METER-FILE
-           RECORD CONTAINS         22  CHARACTERS.
+           RECORD CONTAINS         21  CHARACTERS.
 
        01 TI01-METER-RECORD.
-          05 IN-CUST-ID    PIC X(10).
-          05 IN-INSTALL-DT PIC X(11).
-          05 IN-STATUS     PIC X(1).
+          05 IN-METER-ID    PIC X(7).
+          05 FILLER         PIC X(2).
+          05 IN-INSTALL-DT  PIC X(10).
+          05 FILLER         PIC X(1).
+          05 IN-STATUS      PIC X(1).
 
        FD MO01-METER-KSDS
            RECORD CONTAINS         34  CHARACTERS.
@@ -79,6 +81,15 @@
            05  WS-RAND-4DIGIT      PIC 9(04)         VALUE 0.
            05  WS-RAND-DISPLAY     PIC X(04)         VALUE SPACES.
            05  WS-ID-RAND          PIC X(04).
+           05  WS-RETRY-CTR        PIC 9(02)         VALUE 0.
+
+       01 WS-CONSUMPTION-CALC.
+          05 WS-CONSUMPTION      PIC 9(08) VALUE 0.
+          05 WS-CURRENT-READING  PIC 9(08) VALUE 0.
+          05 WS-PREV-READING     PIC 9(08) VALUE 0.
+          05 WS-UNIT-RATE        PIC 9(03)V99 VALUE 8.50.
+          05 WS-BILL-AMOUNT      PIC 9(08)V99 VALUE 0.
+          05 WS-BILL-DISPLAY     PIC X(15).
 
        01 WS-RAND-NUM-GEN.
           05 WS-RAND-NUM           PIC 9(08).
@@ -88,6 +99,7 @@
           05 I                     PIC 9(04) VALUE 1.
           05 J                     PIC 9(04) VALUE 1.
           05 WS-RETRY-CTR          PIC 9(04) VALUE 0.
+
        01 WS-METER-ID-GEN.
           05 WS-MTR-PREFIX         PIC X(4) VALUE 'MTR-'.
           05 WS-MTR-SEQ            PIC 9(3) VALUE ZERO.
@@ -97,7 +109,7 @@
           05 WS-MTR-MM             PIC 99.
           05 WS-MTR-RAND           PIC 9999.
 
-       01 WS-METER-ID-OUT          PIC X(7).
+       01 WS-HARDCODED-METER-ID   PIC X(7).
 
        01 WS-ERROR-FLAGS.
           05 WS-ERROR-RECORD-FLAG  PIC 9.
@@ -189,8 +201,8 @@
 
            SET VALID-RECORD-FLAG       TO TRUE.
 
-           IF IN-CUST-ID IS EQUAL TO SPACES
-              DISPLAY 'CUSTOMER ID ERROR'
+           IF IN-METER-ID IS EQUAL TO SPACES
+              DISPLAY 'METER ID ERROR'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-METER-RECORD      TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
@@ -202,7 +214,7 @@
 
        2400-WRITE-METER-KSDS SECTION.
 
-           MOVE IN-CUST-ID               TO OUT-CUST-ID.
+           MOVE IN-METER-ID              TO WS-HARDCODED-METER-ID.
            MOVE IN-INSTALL-DT            TO OUT-INSTALL-DT.
            MOVE IN-STATUS                TO OUT-STATUS.
            MOVE 0                        TO WS-RETRY-CTR.
@@ -214,10 +226,11 @@
            IF WS-KSDS-STATUS = '00'
               ADD 1 TO WS-WRITE-CTR
               DISPLAY 'METER ID WRITTEN: ' METER-ID
+              PERFORM 2420-CALCULATE-CONSUMPTION
            ELSE
               ADD 1 TO WS-ERROR-CTR
-              DISPLAY 'ERROR: UNABLE TO WRITE RECORD FOR CUST:'
-                       IN-CUST-ID ' STATUS: ' WS-KSDS-STATUS
+              DISPLAY 'ERROR: UNABLE TO WRITE RECORD FOR METER:'
+                       IN-METER-ID ' STATUS: ' WS-KSDS-STATUS
               DISPLAY 'MAX RETRIES EXCEEDED FOR THIS RECORD'
            END-IF.
 
@@ -235,8 +248,8 @@
            MOVE WS-RAND-4DIGIT     TO WS-RAND-DISPLAY
            MOVE WS-RAND-DISPLAY    TO WS-ID-RAND.
 
-           MOVE IN-CUST-ID(1:1)  TO WS-MTR-CUST-CH1.
-           MOVE IN-CUST-ID(2:1)  TO WS-MTR-CUST-CH2.
+           MOVE IN-METER-ID(1:1)  TO WS-MTR-CUST-CH1.
+           MOVE IN-METER-ID(2:1)  TO WS-MTR-CUST-CH2.
 
            MOVE WS-DD                    TO WS-MTR-DD.
            MOVE WS-MM                    TO WS-MTR-MM.
@@ -261,6 +274,37 @@
                NOT INVALID KEY
                    MOVE '00' TO WS-KSDS-STATUS
            END-WRITE.
+
+       2420-CALCULATE-CONSUMPTION SECTION.
+      *    ------------------------------------------------------------
+      *    CALCULATE BILL AMOUNT BASED ON CONSUMPTION
+      *    Formula: Bill Amount = (Current Reading - Prev Reading) * Unit Rate
+      *    ------------------------------------------------------------
+
+      *    Generate random readings for simulation
+           COMPUTE WS-CURRENT-READING =
+               FUNCTION MOD((WS-RAND-SEED * 1664525 + 1013904223), 10000)
+           COMPUTE WS-PREV-READING =
+               FUNCTION MOD((WS-RAND-SEED * 1103515245 + 12345), 10000)
+
+      *    Ensure current reading is greater than previous
+           IF WS-PREV-READING > WS-CURRENT-READING
+              MOVE WS-PREV-READING TO WS-CURRENT-READING
+              ADD 500 TO WS-CURRENT-READING
+           END-IF.
+
+      *    Calculate consumption (units used)
+           COMPUTE WS-CONSUMPTION = WS-CURRENT-READING - WS-PREV-READING
+
+      *    Calculate bill amount
+           COMPUTE WS-BILL-AMOUNT = WS-CONSUMPTION * WS-UNIT-RATE
+
+           DISPLAY '  CONSUMPTION DATA FOR METER: ' METER-ID
+           DISPLAY '    Current Reading: ' WS-CURRENT-READING
+           DISPLAY '    Previous Reading: ' WS-PREV-READING
+           DISPLAY '    Units Consumed: ' WS-CONSUMPTION
+           DISPLAY '    Unit Rate: ' WS-UNIT-RATE
+           DISPLAY '    Bill Amount: ' WS-BILL-AMOUNT.
 
        9000-TERMINATE   SECTION.
 
