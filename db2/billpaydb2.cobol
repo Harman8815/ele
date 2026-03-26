@@ -248,6 +248,16 @@
 
            PERFORM 2200-READ-PAYMENT.
 
+      *    OPEN BILL CURSOR BEFORE FETCHING
+           EXEC SQL
+               OPEN BILL_CURSOR
+           END-EXEC.
+
+           IF SQLCODE NOT = 0
+              DISPLAY 'ERROR OPENING BILL CURSOR: SQLCODE=' SQLCODE
+              STOP RUN
+           END-IF.
+
            PERFORM 2300-READ-BILL.
 
            PERFORM UNTIL SQLCODE = 100
