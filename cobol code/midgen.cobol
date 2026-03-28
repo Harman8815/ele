@@ -6,10 +6,16 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
 
-           SELECT TI01-CUSTOMER-FILE  ASSIGN TO CUSTIN
+           SELECT TI01-METER-FILE  ASSIGN TO METERIN
            ORGANIZATION           IS SEQUENTIAL
            ACCESS MODE            IS SEQUENTIAL
-           FILE STATUS            IS WS-CUST-STATUS.
+           FILE STATUS            IS WS-METER-STATUS.
+
+           SELECT MI01-CUSTOMER-KSDS  ASSIGN TO CUSTKSDS
+           ORGANIZATION           IS INDEXED
+           ACCESS MODE            IS SEQUENTIAL
+           RECORD KEY             IS CUST-KEY
+           FILE STATUS            IS WS-CUST-KSDS-STATUS.
 
            SELECT MO01-METER-KSDS  ASSIGN TO MTRKSDS
            ORGANIZATION           IS INDEXED
@@ -26,52 +32,49 @@
 
        FILE SECTION.
 
-       FD TI01-CUSTOMER-FILE
-           RECORD CONTAINS         80  CHARACTERS.
+       FD TI01-METER-FILE
+           RECORD CONTAINS         8  CHARACTERS.
 
-       01 TI01-CUSTOMER-RECORD.
-          05 IN-CUST-ID       PIC X(9).
-          05 IN-FIRST-NAME    PIC X(20).
-          05 IN-LAST-NAME     PIC X(20).
-          05 IN-AREA-CODE     PIC X(3).
-          05 FILLER           PIC X(1).
-          05 IN-ADDRESS       PIC X(25).
-          05 FILLER           PIC X(1).
-          05 IN-CITY          PIC X(10).
+       01 TI01-METER-RECORD.
+          05 IN-PREV-READ     PIC X(4).
+          05 IN-CURR-READ     PIC X(4).
+
+       FD MI01-CUSTOMER-KSDS
+           RECORD CONTAINS         24  CHARACTERS.
+
+       01 MI01-CUSTOMER-RECORD.
+          05 CUST-KEY         PIC X(9).
+          05 CUST-FILLER      PIC X(15).
 
        FD MO01-METER-KSDS
-           RECORD CONTAINS         35  CHARACTERS.
+           RECORD CONTAINS         21  CHARACTERS.
 
        01 MO01-METER-RECORD.
           05 MTR-CUST-ID      PIC X(9).
-          05 MTR-METER-ID     PIC X(10).
-          05 MTR-PREV-READ    PIC 9(08).
-          05 MTR-CURR-READ    PIC 9(08).
+          05 MTR-PREV-READ    PIC 9(06).
+          05 MTR-CURR-READ    PIC 9(06).
 
        FD TO01-METER-ERR
            RECORDING MODE          IS F
-           RECORD CONTAINS         80 CHARACTERS.
+           RECORD CONTAINS         8 CHARACTERS.
 
        01 TO01-METER-ERR-RECORD.
-          05 ERR-CUST-ID      PIC X(9).
-          05 ERR-FIRST-NAME   PIC X(20).
-          05 ERR-LAST-NAME    PIC X(20).
-          05 ERR-AREA-CODE    PIC X(3).
-          05 FILLER           PIC X(1).
-          05 ERR-ADDRESS      PIC X(25).
-          05 FILLER           PIC X(1).
-          05 ERR-CITY         PIC X(10).
+          05 ERR-PREV-READ    PIC X(4).
+          05 ERR-CURR-READ    PIC X(4).
 
        WORKING-STORAGE SECTION.
 
        01 WS-FILE-STATUS-CODES.
-          05 WS-CUST-STATUS       PIC X(02).
-             88 CUST-IO-STATUS    VALUE '00'.
-             88 CUST-EOF          VALUE '10'.
-             88 CUST-ROW-NOTFND   VALUE '23'.
+          05 WS-METER-STATUS       PIC X(02).
+             88 METER-IO-STATUS    VALUE '00'.
+             88 METER-EOF          VALUE '10'.
+             88 METER-ROW-NOTFND   VALUE '23'.
           05 WS-KSDS-STATUS        PIC X(02).
              88 KSDS-IO-STATUS     VALUE '00'.
              88 KSDS-ROW-NOTFND    VALUE '23'.
+          05 WS-CUST-KSDS-STATUS    PIC X(02).
+             88 CUST-KSDS-IO-STATUS  VALUE '00'.
+             88 CUST-KSDS-EOF        VALUE '10'.
           05 WS-ERR-STATUS         PIC X(02).
              88 ERR-IO-STATUS      VALUE '00'.
 
@@ -143,15 +146,24 @@
 
            PERFORM 2100-OPEN-FILES.
 
-           PERFORM 2200-READ-CUSTOMER-FILE UNTIL CUST-EOF.
+           PERFORM 2200-READ-CUSTOMER-KSDS UNTIL CUST-KSDS-EOF.
 
        2100-OPEN-FILES  SECTION.
 
-           OPEN INPUT TI01-CUSTOMER-FILE.
-           IF NOT CUST-IO-STATUS
+           OPEN INPUT MI01-CUSTOMER-KSDS.
+           IF NOT CUST-KSDS-IO-STATUS
               DISPLAY '----------------------------------------'
-              DISPLAY 'ERROR OPENING CUSTOMER INPUT FILE       '
-              DISPLAY 'FILE  STATUS ', ' ',    WS-CUST-STATUS
+              DISPLAY 'ERROR OPENING CUSTOMER MASTER KSDS      '
+              DISPLAY 'FILE  STATUS ', ' ',    WS-CUST-KSDS-STATUS
+              DISPLAY '----------------------------------------'
+              STOP RUN
+           END-IF.
+
+           OPEN INPUT TI01-METER-FILE.
+           IF NOT METER-IO-STATUS
+              DISPLAY '----------------------------------------'
+              DISPLAY 'ERROR OPENING METER INPUT FILE       '
+              DISPLAY 'FILE  STATUS ', ' ',    WS-METER-STATUS
               DISPLAY '----------------------------------------'
               STOP RUN
            END-IF.
@@ -175,34 +187,55 @@
            END-IF.
 
            DISPLAY '----------------------------------------'
-           DISPLAY 'CUSTOMER INPUT FILE OPENED ..............'
+           DISPLAY 'CUSTOMER KSDS OPENED ..............'
+           DISPLAY 'METER INPUT FILE OPENED ...........'
            DISPLAY 'METER MASTER KSDS IS OPENED ..........'
            DISPLAY 'METER ERROR FILE IS OPENED ..........'
            DISPLAY '----------------------------------------'
            .
 
-       2200-READ-CUSTOMER-FILE  SECTION.
+       2200-READ-CUSTOMER-KSDS  SECTION.
 
-           READ TI01-CUSTOMER-FILE
+           READ MI01-CUSTOMER-KSDS
 
-                AT END  SET CUST-EOF TO TRUE
+                AT END  SET CUST-KSDS-EOF TO TRUE
                 DISPLAY '----------------------------------------'
-                DISPLAY 'NO MORE RECORDS IN CUSTOMER-FILE --------'
+                DISPLAY 'NO MORE CUSTOMERS FOR METER PROCESSING ---'
                 DISPLAY '----------------------------------------'
 
                 NOT AT END  ADD 1  TO WS-READ-CTR
-                            PERFORM 2300-VALIDATE-CUSTOMER
+                            PERFORM 2205-READ-METER-DATA
 
            END-READ.
 
-       2300-VALIDATE-CUSTOMER SECTION.
+       2205-READ-METER-DATA SECTION.
+
+           READ TI01-METER-FILE
+
+                AT END  SET METER-EOF TO TRUE
+                DISPLAY '----------------------------------------'
+                DISPLAY 'NO MORE METER READINGS AVAILABLE --------'
+                DISPLAY '----------------------------------------'
+
+                NOT AT END  PERFORM 2300-VALIDATE-METER
+
+           END-READ.
+
+       2300-VALIDATE-METER SECTION.
 
            SET VALID-RECORD-FLAG       TO TRUE.
 
-           IF IN-CUST-ID IS EQUAL TO SPACES
-              DISPLAY 'CUSTOMER ID ERROR - CUST_ID REQUIRED FOR METER'
+           IF IN-PREV-READ IS EQUAL TO SPACES
+              DISPLAY 'METER PREVIOUS READ ERROR - PREV_READ REQUIRED FOR METER'
               SET ERROR-RECORD-FLAG         TO TRUE
-              MOVE TI01-CUSTOMER-RECORD     TO TO01-METER-ERR-RECORD
+              MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
+              WRITE TO01-METER-ERR-RECORD
+           END-IF.
+
+           IF IN-CURR-READ IS EQUAL TO SPACES
+              DISPLAY 'METER CURRENT READ ERROR - CURR_READ REQUIRED FOR METER'
+              SET ERROR-RECORD-FLAG         TO TRUE
+              MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
            END-IF.
 
@@ -212,71 +245,14 @@
 
        2400-WRITE-METER-KSDS SECTION.
 
-           MOVE IN-CUST-ID               TO WS-HARDCODED-CUST-ID.
-           MOVE IN-CUST-ID               TO MTR-CUST-ID.
-           MOVE 0                        TO WS-RETRY-CTR.
-           MOVE 99                       TO WS-KSDS-STATUS.
+           MOVE CUST-KEY                  TO MTR-CUST-ID.
 
-           PERFORM 2410-GENERATE-UNIQUE-METER-ID
-               UNTIL WS-KSDS-STATUS = '00' OR WS-RETRY-CTR > 100.
-
-           IF WS-KSDS-STATUS = '00'
-              ADD 1 TO WS-WRITE-CTR
-              DISPLAY 'METER RECORD WRITTEN FOR CUST: ' MTR-CUST-ID
-              DISPLAY '  METER ID: ' MTR-METER-ID
-              DISPLAY '  PREV READ: ' MTR-PREV-READ
-              DISPLAY '  CURR READ: ' MTR-CURR-READ
-           ELSE
-              ADD 1 TO WS-ERROR-CTR
-              DISPLAY 'ERROR: UNABLE TO WRITE METER FOR CUST:'
-                       IN-CUST-ID ' STATUS: ' WS-KSDS-STATUS
-              DISPLAY 'MAX RETRIES EXCEEDED FOR THIS RECORD'
-           END-IF.
-
-       2410-GENERATE-UNIQUE-METER-ID SECTION.
-
-           COMPUTE WS-RAND-SEED =
-              FUNCTION MOD(
-                 ( WS-RAND-SEED * 1103515245 + 12345 + WS-RETRY-CTR)
-                 ,2147483647 )
-
-           COMPUTE WS-RAND-RESULT =
-               FUNCTION MOD((WS-RAND-SEED * 1664525
-                             + 1013904223), 1000000)
-           MOVE WS-RAND-RESULT     TO WS-RAND-4DIGIT
-           MOVE WS-RAND-4DIGIT     TO WS-RAND-DISPLAY
-           MOVE WS-RAND-DISPLAY    TO WS-ID-RAND.
-
-           MOVE IN-CUST-ID(1:1)    TO WS-MTR-CUST-CH1.
-           MOVE IN-CUST-ID(2:1)    TO WS-MTR-CUST-CH2.
-
-           MOVE WS-DD                    TO WS-MTR-DD.
-           MOVE WS-MM                    TO WS-MTR-MM.
-           MOVE WS-ID-RAND               TO WS-MTR-RAND.
-
-           STRING WS-MTR-PREFIX WS-MTR-CUST-CH1 WS-MTR-CUST-CH2
-                  WS-MTR-DD WS-MTR-MM WS-MTR-RAND
-                  DELIMITED BY SIZE
-                  INTO MTR-METER-ID
-           END-STRING.
-
-      *    Generate random meter readings per ER diagram (prev_read, curr_read)
-           COMPUTE WS-CURR-READING =
-               FUNCTION MOD((WS-RAND-SEED * 1664525 + 1013904223), 10000)
-           COMPUTE WS-PREV-READING =
-               FUNCTION MOD((WS-RAND-SEED * 1103515245 + 12345), 10000)
-
-      *    Ensure current reading is greater than previous
-           IF WS-PREV-READING > WS-CURR-READING
-              MOVE WS-PREV-READING TO WS-CURR-READING
-              ADD 500 TO WS-CURR-READING
-           END-IF.
-
-           MOVE WS-PREV-READING          TO MTR-PREV-READ.
-           MOVE WS-CURR-READING          TO MTR-CURR-READ.
+           COMPUTE MTR-PREV-READ = FUNCTION NUMVAL(IN-PREV-READ)
+           COMPUTE MTR-CURR-READ = FUNCTION NUMVAL(IN-CURR-READ)
 
            DISPLAY 'ATTEMPTING METER FOR CUST: ' MTR-CUST-ID
-                   ' METER ID: ' MTR-METER-ID.
+                   ' PREV READ: ' MTR-PREV-READ
+                   ' CURR READ: ' MTR-CURR-READ.
 
            WRITE MO01-METER-RECORD
                INVALID KEY
@@ -290,6 +266,7 @@
                    END-IF
                NOT INVALID KEY
                    MOVE '00' TO WS-KSDS-STATUS
+                   ADD 1 TO WS-WRITE-CTR
            END-WRITE.
 
        9000-TERMINATE   SECTION.
@@ -301,12 +278,14 @@
            DISPLAY ' ERROR RECORDS            ',  WS-ERROR-CTR
            DISPLAY '----------------------------------------'
 
-           CLOSE  TI01-CUSTOMER-FILE,
+           CLOSE  MI01-CUSTOMER-KSDS,
+                  TI01-METER-FILE,
                   TO01-METER-ERR,
                   MO01-METER-KSDS.
 
            DISPLAY '----------------------------------------'
            DISPLAY 'CUSTOMER FILE      IS CLOSED          '
+           DISPLAY 'METER INPUT FILE   IS CLOSED          '
            DISPLAY 'METER MASTER KSDS  IS CLOSED          '
            DISPLAY 'METER ERROR FILE   IS CLOSED          '
            DISPLAY '----------------------------------------'

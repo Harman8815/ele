@@ -27,41 +27,38 @@
        FILE SECTION.
 
        FD TI01-CUSTOMER-FILE
-           RECORD CONTAINS         80  CHARACTERS.
+           RECORD CONTAINS         18  CHARACTERS.
 
        01 TI01-CUSTOMER-RECORD.
-          05 IN-FIRST-NAME    PIC X(20).
-          05 IN-LAST-NAME     PIC X(20).
-          05 IN-AREA-CODE     PIC X(3).
-          05 FILLER           PIC X(1).
-          05 IN-ADDRESS       PIC X(25).
-          05 FILLER           PIC X(1).
-          05 IN-CITY          PIC X(10).
+          05 IN-FIRST-NAME    PIC X(2).
+          05 IN-LAST-NAME     PIC X(2).
+          05 IN-AREA-CODE     PIC X(6).
+          05 IN-ADDRESS       PIC X(3).
+          05 IN-CITY          PIC X(2).
+          05 IN-UNITS         PIC X(3).
 
        FD MO01-CUSTOMER-KSDS
-           RECORD CONTAINS         70  CHARACTERS.
+           RECORD CONTAINS         24  CHARACTERS.
 
        01 MO01-CUSTOMER-RECORD.
           05 CUST-ID          PIC X(9).
-          05 OUT-FIRST-NAME   PIC X(20).
-          05 OUT-LAST-NAME    PIC X(20).
-          05 OUT-AREA-CODE    PIC X(3).
-          05 OUT-ADDRESS      PIC X(25).
-          05 OUT-CITY         PIC X(10).
-          05 OUT-TOTAL-UNITS  PIC 9(08).
+          05 OUT-FIRST-NAME   PIC X(2).
+          05 OUT-LAST-NAME    PIC X(2).
+          05 OUT-AREA-CODE    PIC X(6).
+          05 OUT-ADDRESS      PIC X(3).
+          05 OUT-CITY         PIC X(2).
 
        FD TO01-CUSTOMER-ERR
            RECORDING MODE          IS F
-           RECORD CONTAINS         80 CHARACTERS.
+           RECORD CONTAINS         18 CHARACTERS.
 
        01 TO01-CUSTOMER-ERR-RECORD.
-          05 ERR-FIRST-NAME   PIC X(20).
-          05 ERR-LAST-NAME    PIC X(20).
-          05 ERR-AREA-CODE    PIC X(3).
-          05 FILLER           PIC X(1).
-          05 ERR-ADDRESS      PIC X(25).
-          05 FILLER           PIC X(1).
-          05 ERR-CITY         PIC X(10).
+          05 ERR-FIRST-NAME   PIC X(2).
+          05 ERR-LAST-NAME    PIC X(2).
+          05 ERR-AREA-CODE    PIC X(6).
+          05 ERR-ADDRESS      PIC X(3).
+          05 ERR-CITY         PIC X(2).
+          05 ERR-UNITS        PIC X(3).
 
        WORKING-STORAGE SECTION.
 
@@ -94,10 +91,8 @@
 
        01 WS-CUST-ID-GEN.
           05 WS-CUST-PREFIX        PIC X(3) VALUE 'C'.
-          05 WS-CUST-AREA          PIC X(3).
-          05 WS-CUST-DD            PIC 99.
-          05 WS-CUST-MM            PIC 99.
-          05 WS-CUST-RAND          PIC 9999.
+          05 WS-CUST-AREA          PIC X(6).
+          05 WS-CUST-RAND          PIC 9(4).
 
        01 WS-ERROR-FLAGS.
           05 WS-ERROR-RECORD-FLAG  PIC 9.
@@ -238,12 +233,9 @@
            MOVE WS-RAND-DISPLAY    TO WS-ID-RAND.
 
            MOVE IN-AREA-CODE       TO WS-CUST-AREA.
-           MOVE WS-DD              TO WS-CUST-DD.
-           MOVE WS-MM              TO WS-CUST-MM.
            MOVE WS-ID-RAND         TO WS-CUST-RAND.
 
-           STRING WS-CUST-PREFIX WS-CUST-AREA
-                  WS-CUST-DD WS-CUST-MM WS-CUST-RAND
+           STRING WS-CUST-PREFIX WS-CUST-AREA WS-CUST-RAND
                   DELIMITED BY SIZE
                   INTO CUST-ID
            END-STRING.
