@@ -2,9 +2,9 @@ import random
 import csv
 import os
 
-FIRST_NAMES = ["01","02","03","04","05","06","07","08","09","10"]
-LAST_NAMES = ["01","02","03","04","05","06","07","08","09","10"]
-CITIES = ["01","02","03","04","05","06","07","08","09","10"]
+FIRST_NAMES = ["Aman","Riya","Karan","Neha","Rahul","Priya","Arjun","Sneha","Vikram","Anjali"]
+LAST_NAMES = ["Sharma","Verma","Patel","Singh","Gupta","Nair","Reddy","Iyer","Yadav","Das"]
+CITIES = ["Indore","Bangalore","Ahmedabad","Delhi","Lucknow","Kochi","Hyderabad","Chennai","Patna","Kolkata"]
 
 def ensure_data_folder():
     if not os.path.exists("data"):
@@ -64,12 +64,12 @@ def create_customer_file(data):
             units = curr - prev
 
             record = (
-                pad(first, 2) +
-                pad(last, 2) +
-                pad(area, 6) +
-                pad(address, 3) +
-                pad(city, 2) +
-                pad(units, 3)
+                first[:10].ljust(10) +
+                last[:10].ljust(10) +
+                area[:6].ljust(6) +
+                address[:3] +
+                city[:10].ljust(10) +
+                str(units)[:4].rjust(4)
             )
             f.write(record + "\n")
 
@@ -79,8 +79,8 @@ def create_meter_file(data):
             _, _, _, _, _, prev, curr = row
 
             record = (
-                pad(prev, 4) +
-                pad(curr, 4)
+                pad(prev, 6) +
+                pad(curr, 6)
             )
             f.write(record + "\n")
 
@@ -92,10 +92,10 @@ def create_bill_file(data, rate=5):
             amount = units * rate
 
             record = (
-                pad(first, 2) +
-                pad(last, 2) +
-                pad(units, 3) +
-                pad(amount, 5)
+                pad(first, 15) +
+                pad(last, 15) +
+                pad(units, 5) +
+                pad(amount, 8)
             )
             f.write(record + "\n")
 

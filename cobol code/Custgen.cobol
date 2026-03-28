@@ -27,38 +27,38 @@
        FILE SECTION.
 
        FD TI01-CUSTOMER-FILE
-           RECORD CONTAINS         18  CHARACTERS.
+           RECORD CONTAINS         43  CHARACTERS.
 
        01 TI01-CUSTOMER-RECORD.
-          05 IN-FIRST-NAME    PIC X(2).
-          05 IN-LAST-NAME     PIC X(2).
+          05 IN-FIRST-NAME    PIC X(10).
+          05 IN-LAST-NAME     PIC X(10).
           05 IN-AREA-CODE     PIC X(6).
           05 IN-ADDRESS       PIC X(3).
-          05 IN-CITY          PIC X(2).
-          05 IN-UNITS         PIC X(3).
+          05 IN-CITY          PIC X(10).
+          05 IN-UNITS         PIC X(4).
 
        FD MO01-CUSTOMER-KSDS
-           RECORD CONTAINS         24  CHARACTERS.
+           RECORD CONTAINS         48  CHARACTERS.
 
        01 MO01-CUSTOMER-RECORD.
           05 CUST-ID          PIC X(9).
-          05 OUT-FIRST-NAME   PIC X(2).
-          05 OUT-LAST-NAME    PIC X(2).
+          05 OUT-FIRST-NAME   PIC X(10).
+          05 OUT-LAST-NAME    PIC X(10).
           05 OUT-AREA-CODE    PIC X(6).
           05 OUT-ADDRESS      PIC X(3).
-          05 OUT-CITY         PIC X(2).
+          05 OUT-CITY         PIC X(10).
 
        FD TO01-CUSTOMER-ERR
            RECORDING MODE          IS F
-           RECORD CONTAINS         18 CHARACTERS.
+           RECORD CONTAINS         43 CHARACTERS.
 
        01 TO01-CUSTOMER-ERR-RECORD.
-          05 ERR-FIRST-NAME   PIC X(2).
-          05 ERR-LAST-NAME    PIC X(2).
+          05 ERR-FIRST-NAME   PIC X(10).
+          05 ERR-LAST-NAME    PIC X(10).
           05 ERR-AREA-CODE    PIC X(6).
           05 ERR-ADDRESS      PIC X(3).
-          05 ERR-CITY         PIC X(2).
-          05 ERR-UNITS        PIC X(3).
+          05 ERR-CITY         PIC X(10).
+          05 ERR-UNITS        PIC X(4).
 
        WORKING-STORAGE SECTION.
 
