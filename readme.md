@@ -159,6 +159,7 @@ This table is used for generating reports and displaying billing information.
 | prev_read | 6 | 9 | meter.dat |
 | curr_read | 6 | 9 | meter.dat |
 | CUST-ID | 12 | X | CUSTKSDS (C + fname(2) + lname(2) + area(4) + random(3)) |
+| MTR-ID | 14 | X | MTRKSDS (MTR- + cust(2) + DD + MM + random(4)) |
 
 ---
 
