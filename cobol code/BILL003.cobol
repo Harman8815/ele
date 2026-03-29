@@ -99,10 +99,10 @@
           05 WS-REPORT-DATE        PIC X(10).
 
        01 WS-BILL-ID-GEN.
-          05 WS-BILL-PREFIX        PIC X(4) VALUE 'BILL'.
-          05 WS-BILL-YY            PIC 99.
-          05 WS-BILL-MM            PIC 99.
-          05 WS-BILL-RAND          PIC 9999.
+          05 WS-BILL-SEQUENCE     PIC 9(04) VALUE 0000.
+          05 WS-TEMP-BILL-ID       PIC X(12).
+          05 WS-BILL-SUBSCRIPT     PIC 9(04) VALUE ZEROS.
+          05 WS-BILL-INDEX         PIC 9(04) VALUE ZEROS.
 
        01 WS-CALC-VARIABLES.
           05 WS-PREV-READ-NUM      PIC 9(06) VALUE 0.
@@ -125,6 +125,22 @@
           05 WS-WRITE-CTR          PIC 9(04) VALUE ZEROS.
           05 WS-ERROR-CTR          PIC 9(04) VALUE ZEROS.
           05 WS-SKIP-CTR           PIC 9(04) VALUE ZEROS.
+
+       01 WS-BILL-TEMP-STORAGE.
+          05 WS-BILL-TEMP-TABLE.
+             10 WS-BILL-TEMP-RECORD OCCURS 1000 TIMES
+                                 INDEXED BY WS-BILL-IDX.
+                15 WS-T-BILL-ID          PIC X(12).
+                15 WS-T-BILL-CUST-ID     PIC X(12).
+                15 WS-T-BILL-MTR-ID      PIC X(14).
+                15 WS-T-BILL-FIRST-NAME  PIC X(10).
+                15 WS-T-BILL-LAST-NAME   PIC X(10).
+                15 WS-T-BILL-AREA-CODE   PIC X(6).
+                15 WS-T-BILL-ADDRESS     PIC X(29).
+                15 WS-T-BILL-UNITS       PIC 9(6).
+                15 WS-T-BILL-AMOUNT      PIC 9(8)V99.
+          05 WS-BILL-COUNT         PIC 9(04) VALUE ZEROS.
+          05 WS-MAX-BILLS          PIC 9(04) VALUE 1000.
 
        01 WS-REPORT-HEADER1.
           05 FILLER               PIC X(40) VALUE SPACES.
@@ -202,13 +218,17 @@
 
        2000-PROCESS     SECTION.
 
-           PERFORM 2100-OPEN-FILES.
-
-           PERFORM 2200-READ-METER-KSDS UNTIL MTR-EOF.
-
+           PERFORM 2100-OPEN-FILES-PHASE1.
+           PERFORM 2200-PROCESS-METER-RECORDS.
+           PERFORM 2300-CLOSE-FILES-PHASE1.
+           
+           PERFORM 2400-OPEN-FILES-PHASE2.
+           PERFORM 2500-WRITE-BILL-RECORDS.
+           PERFORM 2600-CLOSE-FILES-PHASE2.
+           
            PERFORM 2800-WRITE-REPORT-TOTALS.
 
-       2100-OPEN-FILES  SECTION.
+       2100-OPEN-FILES-PHASE1  SECTION.
 
            OPEN INPUT MI01-METER-KSDS.
            IF NOT MTR-IO-STATUS
@@ -228,15 +248,6 @@
               STOP RUN
            END-IF.
 
-           OPEN OUTPUT MO01-BILL-KSDS.
-           IF NOT BILL-IO-STATUS
-              DISPLAY '----------------------------------------'
-              DISPLAY 'ERROR OPENING BILL MASTER KSDS          '
-              DISPLAY 'FILE  STATUS ', ' ',    WS-BILL-STATUS
-              DISPLAY '----------------------------------------'
-              STOP RUN
-           END-IF.
-
            OPEN OUTPUT TO01-BILL-RPT.
            IF NOT RPT-IO-STATUS
               DISPLAY '----------------------------------------'
@@ -247,13 +258,16 @@
            END-IF.
 
            DISPLAY '----------------------------------------'
-           DISPLAY 'METER KSDS    OPENED ..............'
-           DISPLAY 'CUSTOMER KSDS OPENED ..............'
-           DISPLAY 'BILL KSDS     OPENED .............'
-           DISPLAY 'BILL RPT      OPENED .............'
+           DISPLAY 'METER KSDS    OPENED (PHASE 1) ............'
+           DISPLAY 'CUSTOMER KSDS OPENED (PHASE 1) ............'
+           DISPLAY 'BILL RPT      OPENED (PHASE 1) ............'
            DISPLAY '----------------------------------------'.
 
-       2200-READ-METER-KSDS  SECTION.
+       2200-PROCESS-METER-RECORDS  SECTION.
+
+           PERFORM 2210-READ-METER-KSDS UNTIL MTR-EOF.
+
+       2210-READ-METER-KSDS  SECTION.
 
            READ MI01-METER-KSDS
                 AT END  SET MTR-EOF TO TRUE
@@ -262,11 +276,11 @@
                 DISPLAY '----------------------------------------'
 
                 NOT AT END  ADD 1  TO WS-READ-CTR
-                            PERFORM 2300-READ-CUSTOMER
+                            PERFORM 2220-READ-CUSTOMER
 
            END-READ.
 
-       2300-READ-CUSTOMER SECTION.
+       2220-READ-CUSTOMER SECTION.
 
            MOVE MTR-CUST-ID TO CUST-KEY.
 
@@ -275,10 +289,10 @@
                    DISPLAY 'CUSTOMER NOT FOUND: ' CUST-KEY
                    ADD 1 TO WS-ERROR-CTR
                 NOT INVALID KEY
-                   PERFORM 2400-CALCULATE-BILL
+                   PERFORM 2230-CALCULATE-BILL
            END-READ.
 
-       2400-CALCULATE-BILL SECTION.
+       2230-CALCULATE-BILL SECTION.
 
            COMPUTE WS-PREV-READ-NUM = MTR-PREV-READ
            COMPUTE WS-CURR-READ-NUM = MTR-CURR-READ
@@ -299,33 +313,105 @@
               COMPUTE WS-BILL-AMOUNT = 
                       WS-UNITS-CONSUMED * WS-RATE
 
-              PERFORM 2500-GENERATE-BILL-ID
-              PERFORM 2600-WRITE-BILL-KSDS
+              PERFORM 2240-GENERATE-BILL-ID
+              PERFORM 2250-STORE-BILL-TEMP
+           END-IF.
+
+       2240-GENERATE-BILL-ID SECTION.
+
+           ADD 1 TO WS-BILL-SEQUENCE.
+           
+      *    Generate fully populated 12-character bill ID with leading zeros
+           MOVE SPACES TO WS-TEMP-BILL-ID
+           STRING "BILL-" DELIMITED BY SIZE
+                  WS-BILL-SEQUENCE DELIMITED BY SIZE
+                  INTO WS-TEMP-BILL-ID
+           MOVE WS-TEMP-BILL-ID TO BILL-ID
+           
+           DISPLAY 'GENERATED BILL ID: ' WS-TEMP-BILL-ID.
+
+       2250-STORE-BILL-TEMP SECTION.
+
+           IF WS-BILL-COUNT >= WS-MAX-BILLS
+              DISPLAY 'ERROR: BILL STORAGE FULL - MAX ' WS-MAX-BILLS
+              ADD 1 TO WS-ERROR-CTR
+           ELSE
+              COMPUTE WS-BILL-COUNT = WS-BILL-COUNT + 1
+              MOVE WS-BILL-COUNT TO WS-BILL-SUBSCRIPT
+              SET WS-BILL-IDX TO WS-BILL-SUBSCRIPT
+              
+              MOVE WS-TEMP-BILL-ID 
+                  TO WS-T-BILL-ID(WS-BILL-IDX)
+              MOVE MTR-CUST-ID 
+                  TO WS-T-BILL-CUST-ID(WS-BILL-IDX)
+              MOVE MTR-ID 
+                  TO WS-T-BILL-MTR-ID(WS-BILL-IDX)
+              MOVE CUST-FIRST-NAME 
+                  TO WS-T-BILL-FIRST-NAME(WS-BILL-IDX)
+              MOVE CUST-LAST-NAME 
+                  TO WS-T-BILL-LAST-NAME(WS-BILL-IDX)
+              MOVE CUST-AREA-CODE 
+                  TO WS-T-BILL-AREA-CODE(WS-BILL-IDX)
+              MOVE CUST-ADDRESS 
+                  TO WS-T-BILL-ADDRESS(WS-BILL-IDX)
+              MOVE WS-UNITS-CONSUMED 
+                  TO WS-T-BILL-UNITS(WS-BILL-IDX)
+              MOVE WS-BILL-AMOUNT 
+                  TO WS-T-BILL-AMOUNT(WS-BILL-IDX)
+              
+              ADD WS-BILL-AMOUNT TO WS-TOTAL-AMOUNT
+              
               PERFORM 2700-WRITE-REPORT-LINE
            END-IF.
 
-       2500-GENERATE-BILL-ID SECTION.
+       2300-CLOSE-FILES-PHASE1  SECTION.
 
-           MOVE WS-YY TO WS-BILL-YY.
-           MOVE WS-MM TO WS-BILL-MM.
-           COMPUTE WS-BILL-RAND = FUNCTION RANDOM * 10000.
+           CLOSE MI01-METER-KSDS,
+                 MI01-CUSTOMER-KSDS.
 
-           STRING WS-BILL-PREFIX WS-BILL-YY WS-BILL-MM WS-BILL-RAND
-                  DELIMITED BY SIZE
-                  INTO BILL-ID
-           END-STRING.
+           DISPLAY '----------------------------------------'
+           DISPLAY 'METER KSDS    CLOSED (PHASE 1) ............'
+           DISPLAY 'CUSTOMER KSDS CLOSED (PHASE 1) ............'
+           DISPLAY '----------------------------------------'.
 
-       2600-WRITE-BILL-KSDS SECTION.
+       2400-OPEN-FILES-PHASE2  SECTION.
 
-           MOVE BILL-ID          TO BILL-CUST-ID.
-           MOVE MTR-CUST-ID      TO BILL-CUST-ID.
-           MOVE MTR-ID           TO BILL-MTR-ID.
-           MOVE CUST-FIRST-NAME  TO BILL-FIRST-NAME.
-           MOVE CUST-LAST-NAME   TO BILL-LAST-NAME.
-           MOVE CUST-AREA-CODE   TO BILL-AREA-CODE.
-           MOVE CUST-ADDRESS     TO BILL-ADDRESS.
-           MOVE WS-UNITS-CONSUMED TO BILL-UNITS.
-           MOVE WS-BILL-AMOUNT   TO BILL-AMOUNT.
+           OPEN OUTPUT MO01-BILL-KSDS.
+           IF NOT BILL-IO-STATUS
+              DISPLAY '----------------------------------------'
+              DISPLAY 'ERROR OPENING BILL MASTER KSDS (PHASE 2) '
+              DISPLAY 'FILE  STATUS ', ' ',    WS-BILL-STATUS
+              DISPLAY '----------------------------------------'
+              STOP RUN
+           END-IF.
+
+           DISPLAY '----------------------------------------'
+           DISPLAY 'BILL KSDS     OPENED (PHASE 2) ............'
+           DISPLAY '----------------------------------------'.
+
+       2500-WRITE-BILL-RECORDS SECTION.
+
+           DISPLAY '----------------------------------------'
+           DISPLAY 'WRITING ' WS-BILL-COUNT ' BILL RECORDS TO KSDS'
+           DISPLAY '----------------------------------------'
+
+           PERFORM VARYING WS-BILL-INDEX FROM 1 BY 1
+                     UNTIL WS-BILL-INDEX > WS-BILL-COUNT
+              SET WS-BILL-IDX TO WS-BILL-INDEX
+              PERFORM 2510-WRITE-SINGLE-BILL
+           END-PERFORM.
+
+       2510-WRITE-SINGLE-BILL SECTION.
+
+           MOVE WS-T-BILL-ID(WS-BILL-IDX) TO BILL-ID.
+           MOVE WS-T-BILL-CUST-ID(WS-BILL-IDX) TO BILL-CUST-ID.
+           MOVE WS-T-BILL-MTR-ID(WS-BILL-IDX) TO BILL-MTR-ID.
+           MOVE WS-T-BILL-FIRST-NAME(WS-BILL-IDX) TO BILL-FIRST-NAME.
+           MOVE WS-T-BILL-LAST-NAME(WS-BILL-IDX) TO BILL-LAST-NAME.
+           MOVE WS-T-BILL-AREA-CODE(WS-BILL-IDX) TO BILL-AREA-CODE.
+           MOVE WS-T-BILL-ADDRESS(WS-BILL-IDX) TO BILL-ADDRESS.
+           MOVE WS-T-BILL-UNITS(WS-BILL-IDX) TO BILL-UNITS.
+           MOVE WS-T-BILL-AMOUNT(WS-BILL-IDX) TO BILL-AMOUNT.
 
            WRITE MO01-BILL-RECORD
                INVALID KEY
@@ -339,8 +425,15 @@
                NOT INVALID KEY
                    ADD 1 TO WS-WRITE-CTR
                    ADD 1 TO WS-TOTAL-BILLS
-                   ADD WS-BILL-AMOUNT TO WS-TOTAL-AMOUNT
            END-WRITE.
+
+       2600-CLOSE-FILES-PHASE2  SECTION.
+
+           CLOSE MO01-BILL-KSDS.
+
+           DISPLAY '----------------------------------------'
+           DISPLAY 'BILL KSDS     CLOSED (PHASE 2) ............'
+           DISPLAY '----------------------------------------'.
 
        2700-WRITE-REPORT-LINE SECTION.
 
@@ -348,13 +441,13 @@
               PERFORM 2750-WRITE-PAGE-HEADERS
            END-IF.
 
-           MOVE BILL-ID          TO WS-RPT-BILL-ID.
-           MOVE MTR-CUST-ID      TO WS-RPT-CUST-ID.
-           MOVE CUST-FIRST-NAME  TO WS-RPT-FIRST-NAME.
-           MOVE CUST-LAST-NAME   TO WS-RPT-LAST-NAME.
-           MOVE CUST-AREA-CODE   TO WS-RPT-AREA.
-           MOVE WS-UNITS-CONSUMED TO WS-RPT-UNITS.
-           MOVE WS-BILL-AMOUNT   TO WS-RPT-AMOUNT.
+           MOVE WS-T-BILL-ID(WS-BILL-IDX) TO WS-RPT-BILL-ID.
+           MOVE WS-T-BILL-CUST-ID(WS-BILL-IDX) TO WS-RPT-CUST-ID.
+           MOVE WS-T-BILL-FIRST-NAME(WS-BILL-IDX) TO WS-RPT-FIRST-NAME.
+           MOVE WS-T-BILL-LAST-NAME(WS-BILL-IDX) TO WS-RPT-LAST-NAME.
+           MOVE WS-T-BILL-AREA-CODE(WS-BILL-IDX) TO WS-RPT-AREA.
+           MOVE WS-T-BILL-UNITS(WS-BILL-IDX) TO WS-RPT-UNITS.
+           MOVE WS-T-BILL-AMOUNT(WS-BILL-IDX) TO WS-RPT-AMOUNT.
 
            WRITE TO01-BILL-RPT-RECORD FROM WS-REPORT-DETAIL.
            ADD 1 TO WS-LINE-COUNT.
@@ -382,15 +475,9 @@
            DISPLAY ' ERRORS                   ',  WS-ERROR-CTR
            DISPLAY '----------------------------------------'
 
-           CLOSE  MI01-METER-KSDS,
-                  MI01-CUSTOMER-KSDS,
-                  MO01-BILL-KSDS,
-                  TO01-BILL-RPT.
+           CLOSE TO01-BILL-RPT.
 
            DISPLAY '----------------------------------------'
-           DISPLAY 'METER KSDS    IS CLOSED          '
-           DISPLAY 'CUSTOMER KSDS IS CLOSED          '
-           DISPLAY 'BILL KSDS     IS CLOSED          '
            DISPLAY 'BILL RPT      IS CLOSED          '
            DISPLAY '----------------------------------------'
 
