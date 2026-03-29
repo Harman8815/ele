@@ -108,12 +108,6 @@ IDENTIFICATION DIVISION.
              88 AREA-FOUND         VALUE 'Y'.
              88 AREA-NOT-FOUND     VALUE 'N'.
           05 WS-LOOP-CTR           PIC 9(04).
-          05 WS-SORT-LOOP-CTR1     PIC 9(04).
-          05 WS-SORT-LOOP-CTR2     PIC 9(04).
-          05 WS-TEMP-AREA-RECORD.
-             10 WS-T-AREA-CODE        PIC X(6).
-             10 WS-T-CUSTOMER-COUNT   PIC 9(04).
-             10 WS-T-TOTAL-UNITS      PIC 9(08).
 
        01 WS-REPORT-HEADER1.
           05 FILLER               PIC X(35) VALUE SPACES.
@@ -151,12 +145,12 @@ IDENTIFICATION DIVISION.
           05 FILLER               PIC X(6)  VALUE SPACES.
           05 WS-RPT-CUST-COUNT    PIC Z,ZZ9.
           05 FILLER               PIC X(8)  VALUE SPACES.
-          05 WS-RPT-TOTAL-UNITS   PIC ZZZ,ZZZ,ZZ9.
+          05 WS-RPT-AREA-UNITS     PIC ZZZ,ZZZ,ZZ9.
           05 FILLER               PIC X(89) VALUE SPACES.
 
        01 WS-REPORT-TOTAL.
           05 FILLER               PIC X(5)  VALUE SPACES.
-          05 FILLER               PIC X(4)  VALUE 'TOTAL'.
+          05 FILLER               PIC X(5)  VALUE 'TOTAL'.
           05 FILLER               PIC X(6)  VALUE SPACES.
           05 WS-RPT-TOTAL-CUST    PIC Z,ZZ9.
           05 FILLER               PIC X(8)  VALUE SPACES.
@@ -196,7 +190,6 @@ IDENTIFICATION DIVISION.
 
            PERFORM 2100-OPEN-FILES.
            PERFORM 2200-PROCESS-METER-RECORDS.
-           PERFORM 2300-SORT-AREA-REPORT.
            PERFORM 2400-WRITE-AREA-REPORT.
            PERFORM 2500-CLOSE-FILES.
 
@@ -268,12 +261,16 @@ IDENTIFICATION DIVISION.
            COMPUTE WS-PREV-READ-NUM = MTR-PREV-READ
            COMPUTE WS-CURR-READ-NUM = MTR-CURR-READ
 
+           DISPLAY 'METER DATA - PREV: ' WS-PREV-READ-NUM ' CURR: ' WS-CURR-READ-NUM
+
            IF WS-CURR-READ-NUM < WS-PREV-READ-NUM
               DISPLAY 'ERROR: CURR < PREV FOR CUST ' CUST-KEY
               ADD 1 TO WS-ERROR-CTR
            ELSE
               COMPUTE WS-UNITS-CONSUMED =
                       WS-CURR-READ-NUM - WS-PREV-READ-NUM
+
+              DISPLAY 'CALCULATED UNITS: ' WS-UNITS-CONSUMED ' FOR CUST ' CUST-KEY
 
               PERFORM 2240-UPDATE-AREA-DATA
            END-IF.
@@ -283,13 +280,18 @@ IDENTIFICATION DIVISION.
            MOVE CUST-AREA-CODE TO WS-TEMP-AREA-CODE.
            SET AREA-NOT-FOUND TO TRUE.
 
+           DISPLAY 'PROCESSING AREA: ' WS-TEMP-AREA-CODE
+           DISPLAY 'UNITS CONSUMED: ' WS-UNITS-CONSUMED
+
            IF WS-AREA-COUNT = ZEROS
               PERFORM 2250-ADD-NEW-AREA
            ELSE
               PERFORM 2260-FIND-AREA
               IF AREA-NOT-FOUND
+                 DISPLAY 'AREA NOT FOUND - ADDING NEW AREA'
                  PERFORM 2250-ADD-NEW-AREA
               ELSE
+                 DISPLAY 'AREA FOUND - UPDATING EXISTING'
                  PERFORM 2270-UPDATE-EXISTING-AREA
               END-IF
            END-IF.
@@ -309,15 +311,21 @@ IDENTIFICATION DIVISION.
               MOVE WS-TEMP-AREA-CODE TO WS-A-AREA-CODE(WS-AREA-IDX)
               MOVE 1 TO WS-A-CUSTOMER-COUNT(WS-AREA-IDX)
               MOVE WS-UNITS-CONSUMED TO WS-A-TOTAL-UNITS(WS-AREA-IDX)
+
+              DISPLAY 'ADDED NEW AREA: ' WS-A-AREA-CODE(WS-AREA-IDX)
+              DISPLAY 'INITIAL UNITS: ' WS-A-TOTAL-UNITS(WS-AREA-IDX)
            END-IF.
 
        2260-FIND-AREA SECTION.
 
+           SET AREA-NOT-FOUND TO TRUE.
+
            PERFORM VARYING WS-LOOP-CTR FROM 1 BY 1
                      UNTIL WS-LOOP-CTR > WS-AREA-COUNT
-             OR AREA-FOUND
+                        OR AREA-FOUND
               SET WS-AREA-IDX TO WS-LOOP-CTR
-              IF WS-A-AREA-CODE(WS-AREA-IDX) = WS-TEMP-AREA-CODE
+              IF FUNCTION TRIM(WS-A-AREA-CODE(WS-AREA-IDX)) =
+                 FUNCTION TRIM(WS-TEMP-AREA-CODE)
                  SET AREA-FOUND TO TRUE
               END-IF
            END-PERFORM.
@@ -325,44 +333,11 @@ IDENTIFICATION DIVISION.
        2270-UPDATE-EXISTING-AREA SECTION.
 
            ADD 1 TO WS-A-CUSTOMER-COUNT(WS-AREA-IDX)
-           ADD WS-UNITS-CONSUMED TO WS-A-TOTAL-UNITS(WS-AREA-IDX).
+           ADD WS-UNITS-CONSUMED TO WS-A-TOTAL-UNITS(WS-AREA-IDX)
 
-       2300-SORT-AREA-REPORT SECTION.
-           DISPLAY '----------------------------------------'
-           DISPLAY 'SORTING ' WS-AREA-COUNT ' AREAS BY TOTAL UNITS ......'
-           DISPLAY '----------------------------------------'
-
-           PERFORM VARYING WS-SORT-LOOP-CTR1 FROM 1 BY 1
-                     UNTIL WS-SORT-LOOP-CTR1 >= WS-AREA-COUNT
-              PERFORM VARYING WS-SORT-LOOP-CTR2 FROM WS-SORT-LOOP-CTR1 + 1 BY 1
-                        UNTIL WS-SORT-LOOP-CTR2 > WS-AREA-COUNT
-                 SET WS-AREA-IDX TO WS-SORT-LOOP-CTR1
-                 IF WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR1) < 
-                    WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR2)
-                    
-                    MOVE WS-A-AREA-CODE(WS-SORT-LOOP-CTR1) 
-                        TO WS-T-AREA-CODE
-                    MOVE WS-A-CUSTOMER-COUNT(WS-SORT-LOOP-CTR1) 
-                        TO WS-T-CUSTOMER-COUNT
-                    MOVE WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR1) 
-                        TO WS-T-TOTAL-UNITS
-                    
-                    MOVE WS-A-AREA-CODE(WS-SORT-LOOP-CTR2) 
-                        TO WS-A-AREA-CODE(WS-SORT-LOOP-CTR1)
-                    MOVE WS-A-CUSTOMER-COUNT(WS-SORT-LOOP-CTR2) 
-                        TO WS-A-CUSTOMER-COUNT(WS-SORT-LOOP-CTR1)
-                    MOVE WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR2) 
-                        TO WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR1)
-                    
-                    MOVE WS-T-AREA-CODE 
-                        TO WS-A-AREA-CODE(WS-SORT-LOOP-CTR2)
-                    MOVE WS-T-CUSTOMER-COUNT 
-                        TO WS-A-CUSTOMER-COUNT(WS-SORT-LOOP-CTR2)
-                    MOVE WS-T-TOTAL-UNITS 
-                        TO WS-A-TOTAL-UNITS(WS-SORT-LOOP-CTR2)
-                 END-IF
-              END-PERFORM
-           END-PERFORM.
+           DISPLAY 'UPDATED AREA: ' WS-A-AREA-CODE(WS-AREA-IDX)
+           DISPLAY 'NEW CUSTOMER COUNT: ' WS-A-CUSTOMER-COUNT(WS-AREA-IDX)
+           DISPLAY 'NEW TOTAL UNITS: ' WS-A-TOTAL-UNITS(WS-AREA-IDX)
 
        2400-WRITE-AREA-REPORT SECTION.
            DISPLAY '----------------------------------------'
@@ -389,7 +364,11 @@ IDENTIFICATION DIVISION.
 
            MOVE WS-A-AREA-CODE(WS-AREA-IDX) TO WS-RPT-AREA-CODE
            MOVE WS-A-CUSTOMER-COUNT(WS-AREA-IDX) TO WS-RPT-CUST-COUNT
-           MOVE WS-A-TOTAL-UNITS(WS-AREA-IDX) TO WS-RPT-TOTAL-UNITS
+           MOVE WS-A-TOTAL-UNITS(WS-AREA-IDX) TO WS-RPT-AREA-UNITS
+
+           DISPLAY 'WRITING RECORD - AREA: ' WS-RPT-AREA-CODE
+           DISPLAY 'WRITING RECORD - CUST COUNT: ' WS-RPT-CUST-COUNT
+           DISPLAY 'WRITING RECORD - UNITS: ' WS-RPT-AREA-UNITS
 
            WRITE TO01-AREA-RPT-RECORD FROM WS-REPORT-DETAIL
 

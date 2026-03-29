@@ -1,0 +1,13 @@
+ ****** ***************************** Top of Data ******************************
+ 000001 //OZA265a  JOB NOTIFY=&SYSUID                                           
+ 000002 //STEP1    EXEC PGM=AREARPT                                            
+ 000003                                                                         
+ 000004 //STEPLIB  DD DSN=OZA265.TRGA5.COBOL.LOADLIB,DISP=SHR                   
+ 000005 //SYSPRINT DD SYSOUT=*                                                  
+ 000006 //SYSOUT   DD SYSOUT=*                                                  
+ 000007 //MTRKSDS  DD DSN=OZA265.ELE.METER.KSDS.FILE,                           
+ 000008 //             DISP=SHR                                                 
+ 000009 //CUSTKSDS DD DSN=OZA265.ELE.CUST.KSDS.FILE,                            
+ 000010 //             DISP=SHR                                                 
+ 000011 //arearpt DD SYSOUT=*                                                   
+ ****** **************************** Bottom of Data ****************************
