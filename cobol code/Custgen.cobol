@@ -27,38 +27,43 @@
        FILE SECTION.
 
        FD TI01-CUSTOMER-FILE
-           RECORD CONTAINS         43  CHARACTERS.
+           RECORDING MODE          IS F
+           RECORD CONTAINS         71  CHARACTERS.
 
        01 TI01-CUSTOMER-RECORD.
           05 IN-FIRST-NAME    PIC X(10).
           05 IN-LAST-NAME     PIC X(10).
           05 IN-AREA-CODE     PIC X(6).
-          05 IN-ADDRESS       PIC X(3).
+          05 IN-SPACE         PIC X.
+          05 IN-ADDRESS       PIC X(29).
           05 IN-CITY          PIC X(10).
-          05 IN-UNITS         PIC X(4).
+          05 IN-UNITS         PIC X(5).
 
        FD MO01-CUSTOMER-KSDS
-           RECORD CONTAINS         48  CHARACTERS.
+           RECORD CONTAINS         80  CHARACTERS.
 
        01 MO01-CUSTOMER-RECORD.
           05 CUST-ID          PIC X(9).
           05 OUT-FIRST-NAME   PIC X(10).
           05 OUT-LAST-NAME    PIC X(10).
           05 OUT-AREA-CODE    PIC X(6).
-          05 OUT-ADDRESS      PIC X(3).
+          05 OUT-SPACE        PIC X.
+          05 OUT-ADDRESS      PIC X(29).
           05 OUT-CITY         PIC X(10).
+          05 OUT-UNITS        PIC X(5).
 
        FD TO01-CUSTOMER-ERR
            RECORDING MODE          IS F
-           RECORD CONTAINS         43 CHARACTERS.
+           RECORD CONTAINS         71 CHARACTERS.
 
        01 TO01-CUSTOMER-ERR-RECORD.
           05 ERR-FIRST-NAME   PIC X(10).
           05 ERR-LAST-NAME    PIC X(10).
           05 ERR-AREA-CODE    PIC X(6).
-          05 ERR-ADDRESS      PIC X(3).
+          05 ERR-SPACE        PIC X.
+          05 ERR-ADDRESS      PIC X(29).
           05 ERR-CITY         PIC X(10).
-          05 ERR-UNITS        PIC X(4).
+          05 ERR-UNITS        PIC X(5).
 
        WORKING-STORAGE SECTION.
 
@@ -200,9 +205,10 @@
            MOVE IN-FIRST-NAME        TO OUT-FIRST-NAME.
            MOVE IN-LAST-NAME         TO OUT-LAST-NAME.
            MOVE IN-AREA-CODE         TO OUT-AREA-CODE.
+           MOVE IN-SPACE             TO OUT-SPACE.
            MOVE IN-ADDRESS           TO OUT-ADDRESS.
            MOVE IN-CITY              TO OUT-CITY.
-           MOVE 0                    TO OUT-TOTAL-UNITS.
+           MOVE IN-UNITS             TO OUT-UNITS.
            MOVE 0                    TO WS-RETRY-CTR.
            MOVE 99                   TO WS-KSDS-STATUS.
 
@@ -222,12 +228,12 @@
 
            COMPUTE WS-RAND-SEED =
               FUNCTION MOD(
-                 ( WS-RAND-SEED * 1103515245 + 12345 + WS-RETRY-CTR)
-                 ,2147483647 )
+                 ( WS-RAND-SEED * 1103515245 + 12345 + WS-RETRY-CTR),
+                 2147483647 ).
 
            COMPUTE WS-RAND-RESULT =
                FUNCTION MOD((WS-RAND-SEED * 1664525
-                             + 1013904223), 1000000)
+                             + 1013904223), 1000000).
            MOVE WS-RAND-RESULT     TO WS-RAND-4DIGIT
            MOVE WS-RAND-4DIGIT     TO WS-RAND-DISPLAY
            MOVE WS-RAND-DISPLAY    TO WS-ID-RAND.
