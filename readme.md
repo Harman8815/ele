@@ -124,6 +124,42 @@ This table is used for generating reports and displaying billing information.
 
 ---
 
+## File Format Specifications
+
+### Input Data Files (Python Generated)
+
+| File | LRECL | RECFM | Record Layout |
+|------|-------|-------|---------------|
+| **customer.dat** | **72** | FB | first_name(10) + last_name(10) + area_code(6) + space(1) + address(29) + city(10) + units(5) |
+| **meter.dat** | **12** | FB | prev_read(6) + curr_read(6) |
+| **bill.dat** | **33** | FB | first_name(10) + last_name(10) + units(5) + amount(8) |
+| **master.csv** | VAR | V | CSV format with header |
+
+### COBOL VSAM Files
+
+| File | LRECL | Type | Description |
+|------|-------|------|-------------|
+| **CUSTKSDS** | **80** | KSDS | Customer master (CUST-ID 9 + first 10 + last 10 + area 6 + space 1 + addr 29 + city 10 + units 5) |
+| **TO01-CUSTOMER-ERR** | **72** | SEQ | Customer error records |
+| **MO01-METER-KSDS** | **21** | KSDS | Meter master (MTR-CUST-ID 9 + prev 6 + curr 6) |
+| **TO01-METER-ERR** | **12** | SEQ | Meter error records |
+
+### Field Size Details
+
+| Field | Size | Type | Used In |
+|-------|------|------|---------|
+| first_name | 10 | X | customer.dat, bill.dat, CUSTKSDS |
+| last_name | 10 | X | customer.dat, bill.dat, CUSTKSDS |
+| area_code | 6 | X | customer.dat, CUSTKSDS |
+| space | 1 | X | Separator between area and address |
+| address_line | 29 | X | customer.dat, CUSTKSDS |
+| city | 10 | X | customer.dat, CUSTKSDS |
+| units | 5 | 9 | customer.dat, bill.dat, CUSTKSDS |
+| amount | 8 | 9 | bill.dat |
+| prev_read | 6 | 9 | meter.dat |
+| curr_read | 6 | 9 | meter.dat |
+| CUST-ID | 9 | X | CUSTKSDS (C + area 6 + random 4) |
+
 ---
 
 # 📘 Data Processing Programs
