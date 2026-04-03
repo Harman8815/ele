@@ -1,0 +1,55 @@
+EB04MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                    X
+               STORAGE=AUTO,CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+EB04MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+*----------------------------------------------------------------*
+* TITLE
+*----------------------------------------------------------------*
+TITLE   DFHMDF POS=(2,25),LENGTH=30,ATTRB=(PROT),                      X
+               INITIAL='CUSTOMER READ SCREEN'
+
+*----------------------------------------------------------------*
+* INPUT FIELD
+*----------------------------------------------------------------*
+CID-L   DFHMDF POS=(5,10),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='ENTER CUSTOMER ID :'
+CID     DFHMDF POS=(5,35),LENGTH=12,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* OUTPUT FIELDS
+*----------------------------------------------------------------*
+FN-L    DFHMDF POS=(7,10),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='FIRST NAME  :'
+FN      DFHMDF POS=(7,30),LENGTH=15,ATTRB=(PROT)
+
+LN-L    DFHMDF POS=(8,10),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='LAST NAME   :'
+LN      DFHMDF POS=(8,30),LENGTH=15,ATTRB=(PROT)
+
+AREA-L  DFHMDF POS=(9,10),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='AREA CODE   :'
+AREA    DFHMDF POS=(9,30),LENGTH=10,ATTRB=(PROT)
+
+ADDR-L  DFHMDF POS=(10,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='ADDRESS     :'
+ADDR    DFHMDF POS=(10,30),LENGTH=30,ATTRB=(PROT)
+
+CITY-L  DFHMDF POS=(11,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='CITY        :'
+CITY    DFHMDF POS=(11,30),LENGTH=15,ATTRB=(PROT)
+
+UNIT-L  DFHMDF POS=(12,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='UNITS       :'
+UNIT    DFHMDF POS=(12,30),LENGTH=6,ATTRB=(PROT)
+
+*----------------------------------------------------------------*
+* MESSAGE FIELD
+*----------------------------------------------------------------*
+MSG-L   DFHMDF POS=(15,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='MESSAGE     :'
+MSGTXT  DFHMDF POS=(15,30),LENGTH=45,ATTRB=(PROT)
+
+        DFHMSD TYPE=FINAL
+       END
+

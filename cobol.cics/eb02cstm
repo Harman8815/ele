@@ -1,0 +1,145 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. EB02CUSTM.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+*----------------------------------------------------------------*
+       WORKING-STORAGE SECTION.
+
+       01 WS-COMMAREA.
+          05 WS-DUMMY              PIC X(01).
+
+       01 WS-RESP-CODE             PIC S9(08) COMP.
+
+*----------------------------------------------------------------*
+* FLAGS
+*----------------------------------------------------------------*
+       01 WS-FLAGS.
+          05 WS-VALID-FLAG         PIC X VALUE 'N'.
+
+*----------------------------------------------------------------*
+* COPYBOOKS
+*----------------------------------------------------------------*
+       COPY DFHBMSCA.
+       COPY DFHAID.
+       COPY EB02MSD.
+
+*----------------------------------------------------------------*
+       LINKAGE SECTION.
+
+       01 DFHCOMMAREA.
+          05 LK-COMM-DATA          PIC X(01).
+
+*----------------------------------------------------------------*
+       PROCEDURE DIVISION.
+
+*----------------------------------------------------------------*
+       1000-MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+               PERFORM 2000-INITIAL-SCREEN
+               PERFORM 2100-SEND-MAP
+           ELSE
+               PERFORM 3000-RECEIVE-MAP
+               PERFORM 4000-PROCESS-INPUT
+           END-IF.
+
+*----------------------------------------------------------------*
+       2000-INITIAL-SCREEN.
+
+           MOVE LOW-VALUES TO EB02MAPO
+
+           MOVE -1 TO CHOICEL
+
+           MOVE SPACES TO MSGTXTO.
+
+*----------------------------------------------------------------*
+       2100-SEND-MAP.
+
+           EXEC CICS SEND
+                MAP('EB02MAP')
+                MAPSET('EB02MSD')
+                FROM(EB02MAPO)
+                ERASE
+                CURSOR
+                RESP(WS-RESP-CODE)
+           END-EXEC
+
+           EXEC CICS RETURN
+                TRANSID('EB02')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(LENGTH OF WS-COMMAREA)
+           END-EXEC.
+
+*----------------------------------------------------------------*
+       3000-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE
+                MAP('EB02MAP')
+                MAPSET('EB02MSD')
+                INTO(EB02MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC.
+
+*----------------------------------------------------------------*
+       4000-PROCESS-INPUT.
+
+           EVALUATE CHOICEI
+
+               WHEN 'C'
+               WHEN 'c'
+                   EXEC CICS XCTL
+                        PROGRAM('EB03CUSTC')
+                   END-EXEC
+
+               WHEN 'R'
+               WHEN 'r'
+                   EXEC CICS XCTL
+                        PROGRAM('EB04CUSTR')
+                   END-EXEC
+
+               WHEN 'U'
+               WHEN 'u'
+                   EXEC CICS XCTL
+                        PROGRAM('EB05CUSTU')
+                   END-EXEC
+
+               WHEN '3'
+                   EXEC CICS XCTL
+                        PROGRAM('EB01MAIN')
+                   END-EXEC
+
+               WHEN OTHER
+                   PERFORM 4100-INVALID-OPTION
+
+           END-EVALUATE.
+
+*----------------------------------------------------------------*
+       4100-INVALID-OPTION.
+
+           MOVE 'INVALID OPTION. ENTER C, R, U OR 3'
+                TO MSGTXTO
+
+           MOVE LOW-VALUES TO EB02MAPO
+
+           MOVE -1 TO CHOICEL
+
+           EXEC CICS SEND
+                MAP('EB02MAP')
+                MAPSET('EB02MSD')
+                FROM(EB02MAPO)
+                ERASE
+                CURSOR
+           END-EXEC
+
+           EXEC CICS RETURN
+                TRANSID('EB02')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(LENGTH OF WS-COMMAREA)
+           END-EXEC.
+
+*----------------------------------------------------------------*
+       END PROGRAM EB02CUSTM.
+

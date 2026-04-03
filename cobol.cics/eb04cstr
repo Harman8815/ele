@@ -1,0 +1,157 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. EB04CUSTR.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+*----------------------------------------------------------------*
+       WORKING-STORAGE SECTION.
+
+       01 WS-COMMAREA.
+          05 WS-DUMMY              PIC X(01).
+
+       01 WS-RESP-CODE             PIC S9(08) COMP.
+
+*----------------------------------------------------------------*
+* CUSTOMER DATA
+*----------------------------------------------------------------*
+       01 WS-CUST-ID               PIC X(12).
+
+       01 WS-CUST-REC.
+          05 CUST-ID               PIC X(12).
+          05 FIRST-NAME            PIC X(15).
+          05 LAST-NAME             PIC X(15).
+          05 AREA-CODE             PIC X(10).
+          05 ADDRESS               PIC X(30).
+          05 CITY                  PIC X(15).
+          05 UNITS                 PIC 9(05).
+
+*----------------------------------------------------------------*
+* COPYBOOKS
+*----------------------------------------------------------------*
+       COPY DFHBMSCA.
+       COPY DFHAID.
+       COPY EB04MSD.
+
+*----------------------------------------------------------------*
+       LINKAGE SECTION.
+
+       01 DFHCOMMAREA.
+          05 LK-COMM-DATA          PIC X(01).
+
+*----------------------------------------------------------------*
+       PROCEDURE DIVISION.
+
+*----------------------------------------------------------------*
+       1000-MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+               PERFORM 2000-INITIAL-SCREEN
+               PERFORM 2100-SEND-MAP
+           ELSE
+               PERFORM 3000-RECEIVE-MAP
+               PERFORM 4000-PROCESS-INPUT
+           END-IF.
+
+*----------------------------------------------------------------*
+       2000-INITIAL-SCREEN.
+
+           MOVE LOW-VALUES TO EB04MAPO
+
+           MOVE -1 TO CIDL
+
+           MOVE SPACES TO MSGTXTO.
+
+*----------------------------------------------------------------*
+       2100-SEND-MAP.
+
+           EXEC CICS SEND
+                MAP('EB04MAP')
+                MAPSET('EB04MSD')
+                FROM(EB04MAPO)
+                ERASE
+                CURSOR
+                RESP(WS-RESP-CODE)
+           END-EXEC
+
+           EXEC CICS RETURN
+                TRANSID('EB04')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(LENGTH OF WS-COMMAREA)
+           END-EXEC.
+
+*----------------------------------------------------------------*
+       3000-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE
+                MAP('EB04MAP')
+                MAPSET('EB04MSD')
+                INTO(EB04MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC.
+
+*----------------------------------------------------------------*
+       4000-PROCESS-INPUT.
+
+*----------------------------------------------------------------*
+* GET INPUT
+*----------------------------------------------------------------*
+           MOVE CIDI TO WS-CUST-ID
+
+*----------------------------------------------------------------*
+* VALIDATION
+*----------------------------------------------------------------*
+           IF WS-CUST-ID = SPACES
+               MOVE 'PLEASE ENTER CUSTOMER ID'
+                    TO MSGTXTO
+               PERFORM 2000-INITIAL-SCREEN
+               PERFORM 2100-SEND-MAP
+           ELSE
+               PERFORM 5000-READ-VSAM
+           END-IF.
+
+*----------------------------------------------------------------*
+       5000-READ-VSAM.
+
+           EXEC CICS READ
+                DATASET('OZA266.ELE.CUST.KSDS.FILE')
+                RIDFLD(WS-CUST-ID)
+                INTO(WS-CUST-REC)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+
+*----------------------------------------------------------------*
+* HANDLE RESPONSE
+*----------------------------------------------------------------*
+           EVALUATE WS-RESP-CODE
+
+               WHEN DFHRESP(NORMAL)
+
+                   MOVE FIRST-NAME TO FNO
+                   MOVE LAST-NAME  TO LNO
+                   MOVE AREA-CODE  TO AREAO
+                   MOVE ADDRESS    TO ADDRO
+                   MOVE CITY       TO CITYO
+                   MOVE UNITS      TO UNITO
+
+                   MOVE 'CUSTOMER RECORD FOUND'
+                        TO MSGTXTO
+
+               WHEN DFHRESP(NOTFND)
+
+                   MOVE 'CUSTOMER NOT FOUND'
+                        TO MSGTXTO
+
+               WHEN OTHER
+
+                   MOVE 'ERROR READING RECORD'
+                        TO MSGTXTO
+
+           END-EVALUATE
+
+           PERFORM 2100-SEND-MAP.
+
+*----------------------------------------------------------------*
+       END PROGRAM EB04CUSTR.
+

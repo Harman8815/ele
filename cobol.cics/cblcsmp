@@ -1,0 +1,18 @@
+//OZA266C1 JOB OZA,OZA,MSGLEVEL=(1,1),
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
+//   SET CICSPGM=EB01MSD
+//**********************************************************************
+//***     SAMPLE JCL TO COMPILE COBOL + CICS PROGRAM                 ***
+//***     KEEP USERID IN PLACE OF OZAGSB                             ***
+//***     DO NOT CHANGE LOADLIB=OZAADM.CICS.LOADLIB                  ***
+//**********************************************************************
+//JOBPROC  JCLLIB ORDER=OZAGSB.USER.PROCLIB
+//CICSCOB  EXEC PRCCCSCB,
+//             COPYLIB=OZA266.TRGA5.CPYBK,
+//             LOADLIB=OZAADM.CICS.LOADLIB
+//TRN.SYSIN  DD DSN=OZA266.ELE.SOURCE.CICS.NEW(&CICSPGM),DISP=SHR
+//LKED.SYSIN DD  *
+  NAME EB01MSD(R)
+/*
+//
+

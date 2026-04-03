@@ -1,0 +1,46 @@
+EB02MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                    X
+               STORAGE=AUTO,CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+EB02MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+*----------------------------------------------------------------*
+* TITLE
+*----------------------------------------------------------------*
+TITLE   DFHMDF POS=(2,30),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='CUSTOMER MENU'
+
+*----------------------------------------------------------------*
+* OPTIONS
+*----------------------------------------------------------------*
+TEXT1   DFHMDF POS=(5,10),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='SELECT OPERATION:'
+
+OPT1    DFHMDF POS=(7,15),LENGTH=30,ATTRB=(PROT),                      X
+               INITIAL='C - CREATE CUSTOMER'
+
+OPT2    DFHMDF POS=(8,15),LENGTH=30,ATTRB=(PROT),                      X
+               INITIAL='R - READ CUSTOMER'
+
+OPT3    DFHMDF POS=(9,15),LENGTH=30,ATTRB=(PROT),                      X
+               INITIAL='U - UPDATE CUSTOMER'
+
+OPT4    DFHMDF POS=(10,15),LENGTH=35,ATTRB=(PROT),                     X
+               INITIAL='3 - EXIT TO MAIN MENU'
+
+*----------------------------------------------------------------*
+* INPUT FIELD
+*----------------------------------------------------------------*
+PROMPT  DFHMDF POS=(13,10),LENGTH=25,ATTRB=(PROT),                     X
+               INITIAL='ENTER YOUR CHOICE:'
+
+CHOICE  DFHMDF POS=(13,40),LENGTH=1,ATTRB=(UNPROT,FSET),              X
+               PICIN='X'
+
+*----------------------------------------------------------------*
+* MESSAGE FIELD
+*----------------------------------------------------------------*
+MSGTXT  DFHMDF POS=(16,10),LENGTH=55,ATTRB=(PROT)
+
+        DFHMSD TYPE=FINAL
+       END
+

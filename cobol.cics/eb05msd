@@ -1,0 +1,90 @@
+EB05MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                    X
+               STORAGE=AUTO,CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+*----------------------------------------------------------------*
+* MAP1 : CUSTOMER ID INPUT
+*----------------------------------------------------------------*
+EB05MAP1 DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+TITLE1   DFHMDF POS=(2,25),LENGTH=25,ATTRB=(PROT),              X
+                     INITIAL='CUSTOMER UPDATE'
+
+CID-L    DFHMDF POS=(6,10),LENGTH=20,ATTRB=(PROT),              X
+                     INITIAL='ENTER CUSTOMER ID :'
+CID      DFHMDF POS=(6,35),LENGTH=12,ATTRB=(UNPROT,FSET)        X
+
+MSG1-L   DFHMDF POS=(10,10),LENGTH=10,ATTRB=(PROT),                    X
+               INITIAL='MESSAGE:'
+MSG1     DFHMDF POS=(10,25),LENGTH=45,ATTRB=(PROT)
+
+*----------------------------------------------------------------*
+* MAP2 : UPDATE SCREEN
+*----------------------------------------------------------------*
+EB05MAP2 DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+TITLE2   DFHMDF POS=(2,20),LENGTH=35,ATTRB=(PROT),                     X
+               INITIAL='CUSTOMER UPDATE SCREEN'
+
+HDR1     DFHMDF POS=(4,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='FIELD'
+HDR2     DFHMDF POS=(4,30),LENGTH=20,ATTRB=(PROT),                     X
+               INITIAL='EXISTING VALUE'
+HDR3     DFHMDF POS=(4,55),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='NEW VALUE'
+
+*----------------------------------------------------------------*
+* FIRST NAME
+*----------------------------------------------------------------*
+FN-L     DFHMDF POS=(6,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='FIRST NAME :'
+FN-OLD   DFHMDF POS=(6,30),LENGTH=15,ATTRB=(PROT)
+FN-NEW   DFHMDF POS=(6,55),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* LAST NAME
+*----------------------------------------------------------------*
+LN-L     DFHMDF POS=(7,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='LAST NAME  :'
+LN-OLD   DFHMDF POS=(7,30),LENGTH=15,ATTRB=(PROT)
+LN-NEW   DFHMDF POS=(7,55),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* AREA CODE
+*----------------------------------------------------------------*
+AR-L     DFHMDF POS=(8,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='AREA CODE  :'
+AR-OLD   DFHMDF POS=(8,30),LENGTH=10,ATTRB=(PROT)
+AR-NEW   DFHMDF POS=(8,55),LENGTH=10,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* ADDRESS
+*----------------------------------------------------------------*
+AD-L     DFHMDF POS=(9,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='ADDRESS    :'
+AD-OLD   DFHMDF POS=(9,30),LENGTH=20,ATTRB=(PROT)
+AD-NEW   DFHMDF POS=(9,55),LENGTH=20,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* CITY
+*----------------------------------------------------------------*
+CT-L     DFHMDF POS=(10,10),LENGTH=15,ATTRB=(PROT),                    X
+                INITIAL='CITY       :'
+CT-OLD   DFHMDF POS=(10,30),LENGTH=15,ATTRB=(PROT)
+CT-NEW   DFHMDF POS=(10,55),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* UNITS (PROTECTED)
+*----------------------------------------------------------------*
+UN-L     DFHMDF POS=(11,10),LENGTH=15,ATTRB=(PROT),                    X
+                INITIAL='UNITS      :'
+UN-OLD   DFHMDF POS=(11,30),LENGTH=6,ATTRB=(PROT)
+
+*----------------------------------------------------------------*
+* MESSAGE
+*----------------------------------------------------------------*
+MSG2-L   DFHMDF POS=(14,10),LENGTH=10,ATTRB=(PROT),                    X
+               INITIAL='MESSAGE:'
+MSG2     DFHMDF POS=(14,25),LENGTH=45,ATTRB=(PROT)
+         DFHMSD TYPE=FINAL
+       END
+

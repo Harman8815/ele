@@ -1,0 +1,32 @@
+EB01MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,STORAGE=AUTO,       X +
+               CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+EB01MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+TITLE   DFHMDF POS=(2,20),LENGTH=31,ATTRB=PROT,                        X
+               INITIAL='Electricity Board of Trivandrum'
+
+TEXT1   DFHMDF POS=(5,10),LENGTH=55,ATTRB=(PROT),                      X
+               INITIAL='PLEASE SELECT THE TABLE YOU WANT TO WORK '      N:'
+
+OPT1    DFHMDF POS=(7,15),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='1. CUSTOMER'
+
+OPT2    DFHMDF POS=(8,15),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='2. METER'
+
+OPT3    DFHMDF POS=(9,15),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='3. EXIT'
+
+PROMPT  DFHMDF POS=(12,10),LENGTH=25,ATTRB=(PROT),                     X
+               INITIAL='ENTER YOUR CHOICE:'
+
+CHOICE  DFHMDF POS=(12,40),LENGTH=1,ATTRB=(UNPROT,FSET)                X
+
+        DFHMDF POS=(12,42),LENGTH=1,ATTRB=PROT                         X
+
+MSGTXT  DFHMDF POS=(15,10),LENGTH=50,ATTRB=(PROT)
+
+        DFHMSD TYPE=FINAL
+       END
+
