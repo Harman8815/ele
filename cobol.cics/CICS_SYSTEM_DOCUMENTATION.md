@@ -29,16 +29,16 @@ The CICS Electricity Board System is a mainframe-based customer management appli
 |-----------|------|---------|----------------|
 | **cblcsmp** | JCL | Sample compilation script for COBOL+CICS programs | N/A |
 | **cicsmap** | JCL | Sample compilation script for CICS maps | N/A |
-| **eb01msd** | BMS Map | Main menu screen layout | EB01 |
-| **emnuo010** | COBOL Program | Main menu controller program | EB01 |
-| **eb02msd** | BMS Map | Customer submenu screen layout | EB02 |
-| **eb02cstm** | COBOL Program | Customer menu controller | EB02 |
-| **eb03msd** | BMS Map | Customer creation screen layout | EB03 |
-| **eb03cstc** | COBOL Program | Customer creation logic | EB03 |
-| **eb04msd** | BMS Map | Customer read/inquiry screen layout | EB04 |
-| **eb04cstr** | COBOL Program | Customer read/inquiry logic | EB04 |
-| **eb05msd** | BMS Map | Customer update screen layout (dual maps) | EB05 |
-| **eb05cstu** | COBOL Program | Customer update logic | EB05 |
+| **eb01msd** | BMS Map | Main menu screen layout | EM01 |
+| **EMNUO010** | COBOL Program | Main menu controller program | EM01 |
+| **eb02msd** | BMS Map | Customer submenu screen layout | EM02 |
+| **EMNUO020** | COBOL Program | Customer menu controller | EM02 |
+| **eb03msd** | BMS Map | Customer creation screen layout | EM03 |
+| **ECSTC030** | COBOL Program | Customer creation logic | EM03 |
+| **eb04msd** | BMS Map | Customer read/inquiry screen layout | EM04 |
+| **ECSTR040** | COBOL Program | Customer read/inquiry logic | EM04 |
+| **eb05msd** | BMS Map | Customer update screen layout (dual maps) | EM05 |
+| **ECSTU050** | COBOL Program | Customer update logic | EM05 |
 | **struct** | Documentation | System structure overview | N/A |
 
 ---
@@ -74,13 +74,13 @@ The CICS Electricity Board System is a mainframe-based customer management appli
   - Message area for feedback
 - **Navigation**: Single choice selection
 
-#### **emnuo010** - Main Menu Controller
+#### **EMNUO010** - Main Menu Controller
 - **Purpose**: Controls main menu flow and navigation
 - **Key Logic**:
   - Handles initial screen display
   - Processes user input (1, 2, 3)
   - Routes to appropriate subsystems:
-    - `EB02CUSTM` for Customer operations
+    - `EMNUO020` for Customer operations
     - `EB06METERM` for Meter operations (not implemented)
     - Exit for system termination
 - **Error Handling**: Invalid option messages, key press validation
@@ -96,13 +96,13 @@ The CICS Electricity Board System is a mainframe-based customer management appli
   - 3 - Exit to Main Menu
 - **Input**: Single character choice
 
-#### **eb02cstm** - Customer Menu Controller
+#### **EMNUO020** - Customer Menu Controller
 - **Purpose**: Routes customer operations
 - **Navigation Logic**:
-  - 'C' → `EB03CUSTC` (Create)
-  - 'R' → `EB04CUSTR` (Read)
-  - 'U' → `EB05CUSTU` (Update)
-  - '3' → `EB01MAIN` (Main Menu)
+  - 'C' → `ECSTC030` (Create)
+  - 'R' → `ECSTR040` (Read)
+  - 'U' → `ECSTU050` (Update)
+  - '3' → `EMNUO010` (Main Menu)
 - **Error Handling**: Invalid option validation
 
 ### 4. Customer Creation System
@@ -119,7 +119,7 @@ The CICS Electricity Board System is a mainframe-based customer management appli
   - Status messages
 - **Validation**: All fields mandatory
 
-#### **eb03cstc** - Customer Creation Logic
+#### **ECSTC030** - Customer Creation Logic
 - **Purpose**: Creates new customer records
 - **Key Features**:
   - **ID Generation**: 
@@ -143,7 +143,7 @@ The CICS Electricity Board System is a mainframe-based customer management appli
   - First Name, Last Name, Area Code, Address, City, Units
 - **Message Area**: Status feedback
 
-#### **eb04cstr** - Customer Read Logic
+#### **ECSTR040** - Customer Read Logic
 - **Purpose**: Retrieves and displays customer records
 - **Operations**:
   - READ from VSAM file using Customer ID as key
@@ -164,7 +164,7 @@ The CICS Electricity Board System is a mainframe-based customer management appli
   - Right column: New values (editable)
   - Units field is protected (non-updatable)
 
-#### **eb05cstu** - Customer Update Logic
+#### **ECSTU050** - Customer Update Logic
 - **Two-Stage Process**:
   1. **Stage 1**: Customer ID input and record retrieval
   2. **Stage 2**: Display existing data and collect new values
@@ -202,11 +202,11 @@ EB01 (Main Menu)
 
 | Transaction | Program | Mapset | Function |
 |-------------|---------|--------|----------|
-| EB01 | EMNUO010 | EB01MSD | Main Menu |
-| EB02 | EB02CUSTM | EB02MSD | Customer Menu |
-| EB03 | EB03CUSTC | EB03MSD | Create Customer |
-| EB04 | EB04CUSTR | EB04MSD | Read Customer |
-| EB05 | EB05CUSTU | EB05MSD | Update Customer |
+| EM01 | EMNUO010 | EB01MSD | Main Menu |
+| EM02 | EMNUO020 | EB02MSD | Customer Menu |
+| EM03 | ECSTC030 | EB03MSD | Create Customer |
+| EM04 | ECSTR040 | EB04MSD | Read Customer |
+| EM05 | ECSTU050 | EB05MSD | Update Customer |
 
 ---
 

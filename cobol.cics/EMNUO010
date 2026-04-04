@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. EMNUO020.
+       PROGRAM-ID. EMNUO010.
 
        ENVIRONMENT DIVISION.
 
@@ -13,7 +13,7 @@
 
            COPY DFHBMSCA.
            COPY DFHAID.
-           COPY EB02MSD.
+           COPY EB01MSD.
 
        01 WS-COMMAREA.
           05 WS-CHOICE         PIC X(01).
@@ -34,7 +34,7 @@
        1000-MAIN-LOGIC.
 
            IF EIBCALEN = 0
-              MOVE LOW-VALUES TO EB02MAPO
+              MOVE LOW-VALUES TO EB01MAPO
               MOVE -1 TO CHOICEL
               PERFORM 3000-SEND-MAP
            ELSE
@@ -46,9 +46,9 @@
        2000-RECEIVE-MAP.
 
            EXEC CICS RECEIVE
-                MAP('EB02MAP')
-                MAPSET('EB02MSD')
-                INTO(EB02MAPI)
+                MAP('EB01MAP')
+                MAPSET('EB01MSD')
+                INTO(EB01MAPI)
                 RESP(WS-RESP-CODE)
            END-EXEC.
            IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
@@ -64,7 +64,7 @@
                WHEN DFHPF3
                     PERFORM 9000-TERMINATE
                WHEN DFHPF6
-                    MOVE LOW-VALUES TO EB02MAPO
+                    MOVE LOW-VALUES TO EB01MAPO
                     PERFORM 3000-SEND-MAP
                WHEN OTHER
                     MOVE 'INVALID KEY PRESSED ' TO MSGTXTO
@@ -76,14 +76,11 @@
 
            MOVE CHOICEI           TO WS-CHOICE.
            EVALUATE WS-CHOICE
-               WHEN 'C'
-                    EXEC CICS XCTL
-                         PROGRAM('EMNUO020')
-                    END-EXEC
-               WHEN 'R'
-                   MOVE 'PGM UNDER CONSTRUCTION ' TO MSGTXTO
-                   PERFORM 3000-SEND-MAP
-               WHEN 'U'
+               WHEN '1'
+                   EXEC CICS XCTL
+                        PROGRAM('EMNUO020')
+                   END-EXEC
+               WHEN '2'
                    MOVE 'PGM UNDER CONSTRUCTION ' TO MSGTXTO
                    PERFORM 3000-SEND-MAP
                WHEN '3'
@@ -98,16 +95,16 @@
        3000-SEND-MAP.
 
            EXEC CICS SEND
-                MAP('EB02MAP')
-                MAPSET('EB02MSD')
-                FROM(EB02MAPO)
+                MAP('EB01MAP')
+                MAPSET('EB01MSD')
+                FROM(EB01MAPO)
                 ERASE
                 CURSOR
                 RESP(WS-RESP-CODE)
            END-EXEC
            IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
            EXEC CICS RETURN
-                TRANSID('EM02')
+                TRANSID('EM01')
                 COMMAREA(WS-COMMAREA)
            END-EXEC
            END-IF.

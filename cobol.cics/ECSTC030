@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. EB03CUSTC.
+       PROGRAM-ID. ECSTC030.
 
        ENVIRONMENT DIVISION.
 
@@ -94,7 +94,7 @@
            END-EXEC
 
            EXEC CICS RETURN
-                TRANSID('EB03')
+                TRANSID('EM02')
                 COMMAREA(WS-COMMAREA)
                 LENGTH(LENGTH OF WS-COMMAREA)
            END-EXEC.

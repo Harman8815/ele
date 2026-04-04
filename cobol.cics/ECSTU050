@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. EB05CUSTU.
+       PROGRAM-ID. ECSTU050.
 
        ENVIRONMENT DIVISION.
 
@@ -83,7 +83,7 @@
            MOVE '1' TO WS-STAGE
 
            EXEC CICS RETURN
-                TRANSID('EB05')
+                TRANSID('EM02')
                 COMMAREA(WS-COMMAREA)
                 LENGTH(1)
            END-EXEC.
@@ -111,7 +111,7 @@
            MOVE '2' TO WS-STAGE
 
            EXEC CICS RETURN
-                TRANSID('EB05')
+                TRANSID('EM02')
                 COMMAREA(WS-COMMAREA)
                 LENGTH(1)
            END-EXEC.

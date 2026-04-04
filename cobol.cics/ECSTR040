@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. EB04CUSTR.
+       PROGRAM-ID. ECSTR040.
 
        ENVIRONMENT DIVISION.
 
@@ -76,7 +76,7 @@
            END-EXEC
 
            EXEC CICS RETURN
-                TRANSID('EB04')
+                TRANSID('EM02')
                 COMMAREA(WS-COMMAREA)
                 LENGTH(LENGTH OF WS-COMMAREA)
            END-EXEC.
