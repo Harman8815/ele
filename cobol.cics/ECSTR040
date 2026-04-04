@@ -13,6 +13,8 @@
 
        01 WS-RESP-CODE             PIC S9(08) COMP.
 
+       01 WS-MSG                  PIC X(40).
+
 *----------------------------------------------------------------*
 * CUSTOMER DATA
 *----------------------------------------------------------------*
@@ -153,5 +155,19 @@
            PERFORM 2100-SEND-MAP.
 
 *----------------------------------------------------------------*
-       END PROGRAM EB04CUSTR.
+       9000-TERMINATE.
+
+*----------------------------------------------------------------*
+           MOVE 'PRESS CTRL + BREAK TO EXIT' TO WS-MSG.
+           EXEC CICS SEND TEXT
+                           FROM(WS-MSG)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+               EXEC CICS RETURN END-EXEC
+           END-IF.
+
+*----------------------------------------------------------------*
+       END PROGRAM ECSTR040.
 
