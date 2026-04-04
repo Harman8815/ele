@@ -27,6 +27,9 @@ CHOICE  DFHMDF POS=(12,40),LENGTH=1,ATTRB=(UNPROT,FSET)                X
 
 MSGTXT  DFHMDF POS=(15,10),LENGTH=50,ATTRB=(PROT)
 
+        DFHMDF POS=(18,10),LENGTH=25,ATTRB=(PROT),                     X
+               INITIAL='PF3->EXIT | PF6->CLR SCR '
+
         DFHMSD TYPE=FINAL
        END
 
