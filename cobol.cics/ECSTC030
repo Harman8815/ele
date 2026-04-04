@@ -31,7 +31,10 @@
        01 WS-ID-GEN.
           05 WS-FN-PART            PIC X(02).
           05 WS-LN-PART            PIC X(02).
+          05 WS-AREA-PART          PIC X(04).
           05 WS-RANDOM-NUM         PIC 9(06).
+          05 WS-RAND-3DIGIT        PIC 9(03).
+          05 WS-RETRY-CTR          PIC 9(02) VALUE 0.
 
 *----------------------------------------------------------------*
 * VSAM RECORD STRUCTURE
@@ -120,6 +123,7 @@
            MOVE AREAI  TO WS-AREA-CODE
            MOVE ADDRI  TO WS-ADDRESS
            MOVE CITYI  TO WS-CITY
+           MOVE UNITSI TO WS-UNITS
 
 *----------------------------------------------------------------*
 * VALIDATION
@@ -143,24 +147,27 @@
        5000-GENERATE-ID.
 
 *----------------------------------------------------------------*
-* TAKE FIRST 2 LETTERS
+* TAKE FIRST 2 LETTERS AND AREA CODE
 *----------------------------------------------------------------*
            MOVE WS-FIRST-NAME(1:2) TO WS-FN-PART
            MOVE WS-LAST-NAME(1:2)  TO WS-LN-PART
+           MOVE WS-AREA-CODE(1:4)  TO WS-AREA-PART
 
 *----------------------------------------------------------------*
-* SIMPLE NUMERIC GENERATION (SIMULATED)
+* GENERATE RANDOM 3 DIGIT NUMBER
 *----------------------------------------------------------------*
-           MOVE FUNCTION CURRENT-DATE(9:6) TO WS-RANDOM-NUM
+           COMPUTE WS-RANDOM-NUM = FUNCTION RANDOM * 1000
+           COMPUTE WS-RAND-3DIGIT = FUNCTION MOD(WS-RANDOM-NUM, 1000)
 
 *----------------------------------------------------------------*
-* BUILD CUSTOMER ID
+* BUILD CUSTOMER ID (C + FN(2) + LN(2) + AREA(4) + RAND(3))
 *----------------------------------------------------------------*
            STRING
                'C'
                WS-FN-PART
                WS-LN-PART
-               WS-RANDOM-NUM
+               WS-AREA-PART
+               WS-RAND-3DIGIT
            DELIMITED BY SIZE
            INTO WS-CUST-ID.
 
@@ -198,8 +205,15 @@
                         TO MSGTXTO
 
                WHEN DFHRESP(DUPREC)
-                   PERFORM 5000-GENERATE-ID
-                   PERFORM 6000-WRITE-VSAM
+                   ADD 1 TO WS-RETRY-CTR
+                   IF WS-RETRY-CTR < 10
+                       PERFORM 5000-GENERATE-ID
+                       PERFORM 6000-WRITE-VSAM
+                   ELSE
+                       MOVE 'UNABLE TO GENERATE UNIQUE ID'
+                            TO MSGTXTO
+                       MOVE 0 TO WS-RETRY-CTR
+                   END-IF
 
                WHEN OTHER
                    MOVE 'ERROR WRITING RECORD'
@@ -210,5 +224,18 @@
            PERFORM 2100-SEND-MAP.
 
 *----------------------------------------------------------------*
-       END PROGRAM EB03CUSTC.
-
+       9000-TERMINATE.
+
+*----------------------------------------------------------------*
+           MOVE 'PRESS CTRL + BREAK TO EXIT' TO MSGTXTO.
+           EXEC CICS SEND TEXT
+                           FROM(MSGTXTO)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+               EXEC CICS RETURN END-EXEC
+           END-IF.
+
+*----------------------------------------------------------------*
+       END PROGRAM ECSTC030.

@@ -35,6 +35,10 @@ CITY-L  DFHMDF POS=(11,10),LENGTH=15,ATTRB=(PROT),                     X
                INITIAL='CITY        :'
 CITY    DFHMDF POS=(11,30),LENGTH=15,ATTRB=(UNPROT,FSET)
 
+UNITS-L DFHMDF POS=(12,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='UNITS       :'
+UNITS   DFHMDF POS=(12,30),LENGTH=05,ATTRB=(UNPROT,FSET)
+
 *----------------------------------------------------------------*
 * OUTPUT FIELDS
 *----------------------------------------------------------------*
