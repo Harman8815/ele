@@ -1,0 +1,65 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. METRED.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-RESP    PIC S9(8) COMP.
+
+       01 WS-METER-REC.
+         05 WS-ID    PIC X(20).
+         05 WS-FNAME PIC X(15).
+         05 WS-LNAME PIC X(15).
+         05 WS-AREA  PIC X(5).
+         05 WS-ADDR  PIC X(20).
+         05 WS-CITY  PIC X(15).
+         05 WS-UNITS PIC 9(5).
+
+       COPY METREDM.
+
+       PROCEDURE DIVISION.
+
+           IF EIBCALEN = 0
+             PERFORM SEND-SCREEN
+           ELSE
+             PERFORM RECEIVE-SCREEN
+             PERFORM PROCESS-DATA
+           END-IF
+
+       EXEC CICS RETURN END-EXEC.
+
+       SEND-SCREEN.
+           MOVE SPACES TO MSGFO
+           EXEC CICS SEND MAP('METREDM')
+                          MAPSET('METREDM') ERASE END-EXEC.
+
+       RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('METREDM')
+                          MAPSET('METREDM') END-EXEC.
+
+       PROCESS-DATA.
+
+           MOVE MIDFI TO WS-ID
+
+       EXEC CICS READ
+         FILE('METERKSDS')
+         INTO(WS-METER-REC)
+         RIDFLD(WS-ID)
+         RESP(WS-RESP)
+       END-EXEC
+
+           IF WS-RESP = DFHRESP(NORMAL)
+             MOVE WS-FNAME TO FNAMEFO
+             MOVE WS-LNAME TO LNAMEFO
+             MOVE WS-AREA  TO AREAFO
+             MOVE WS-ADDR  TO ADDRFO
+             MOVE WS-CITY  TO CITYFO
+             MOVE WS-UNITS TO UNITSFO
+             MOVE 'RECORD FOUND' TO MSGFO
+           ELSE
+             MOVE 'METER NOT FOUND' TO MSGFO
+           END-IF
+
+           PERFORM SEND-SCREEN.
+

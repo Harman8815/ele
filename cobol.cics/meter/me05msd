@@ -1,0 +1,91 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. METUPD.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-RESP    PIC S9(8) COMP.
+
+       01 WS-METER-REC.
+           05 WS-ID    PIC X(20).
+           05 WS-FNAME PIC X(15).
+           05 WS-LNAME PIC X(15).
+           05 WS-AREA  PIC X(5).
+           05 WS-ADDR  PIC X(20).
+           05 WS-CITY  PIC X(15).
+           05 WS-UNITS PIC 9(5).
+
+       COPY METUPDM.
+
+       PROCEDURE DIVISION.
+
+           IF EIBCALEN = 0
+               PERFORM SEND-SCREEN
+           ELSE
+               PERFORM RECEIVE-SCREEN
+               PERFORM PROCESS-DATA
+           END-IF
+
+           EXEC CICS RETURN END-EXEC.
+
+       SEND-SCREEN.
+           MOVE SPACES TO MSGFO
+           EXEC CICS SEND MAP('METUPDM')
+           MAPSET('METUPDM') ERASE END-EXEC.
+
+       RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('METUPDM')
+           MAPSET('METUPDM') END-EXEC.
+
+       PROCESS-DATA.
+
+           MOVE MIDFI TO WS-ID
+
+           EXEC CICS READ
+                FILE('METERKSDS')
+                INTO(WS-METER-REC)
+                RIDFLD(WS-ID)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP = DFHRESP(NORMAL)
+
+           IF FNAMEFI NOT = SPACES
+                MOVE FNAMEFI TO WS-FNAME
+           END-IF
+
+           IF LNAMEFI NOT = SPACES
+                MOVE LNAMEFI TO WS-LNAME
+           END-IF
+
+           IF AREAFI NOT = SPACES
+                MOVE AREAFI TO WS-AREA
+           END-IF
+
+           IF ADDRFI NOT = SPACES
+                MOVE ADDRFI TO WS-ADDR
+           END-IF
+
+           IF CITYFI NOT = SPACES
+                MOVE CITYFI TO WS-CITY
+           END-IF
+
+           EXEC CICS REWRITE
+                FILE('METERKSDS')
+                FROM(WS-METER-REC)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP = DFHRESP(NORMAL)
+                MOVE 'UPDATE SUCCESSFUL' TO MSGFO
+           ELSE
+                MOVE 'ERROR UPDATING RECORD' TO MSGFO
+           END-IF
+
+           ELSE
+                MOVE 'METER NOT FOUND' TO MSGFO
+           END-IF
+
+           PERFORM SEND-SCREEN.
+

@@ -1,0 +1,69 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. METCRE
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-RESP PIC S9(8) COMP.
+       01 WS-MID  PIC X(20).
+
+       01 WS-METER-REC.
+           05 WS-ID     PIC X(20).
+           05 WS-FNAME  PIC X(15).
+           05 WS-LNAME  PIC X(15).
+           05 WS-AREA   PIC X(5).
+           05 WS-ADDR   PIC X(20).
+           05 WS-CITY   PIC X(15).
+           05 WS-UNITS  PIC 9(5).
+
+       COPY METMAP.
+
+       PROCEDURE DIVISION.
+
+           IF EIBCALEN = 0
+               PERFORM SEND-SCREEN
+           ELSE
+               PERFORM RECEIVE-SCREEN
+               PERFORM PROCESS-DATA
+           END-IF
+
+           EXEC CICS RETURN END-EXEC.
+
+       SEND-SCREEN.
+           MOVE SPACES TO MSGFO MIDFO
+           EXEC CICS SEND MAP('METMAP')
+           MAPSET('METMAP') ERASE END-EXEC.
+
+       RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('METMAP')
+           MAPSET('METMAP') END-EXEC.
+
+       PROCESS-DATA.
+
+           MOVE FNAMEFI TO WS-FNAME
+           MOVE LNAMEFI TO WS-LNAME
+           MOVE AREAFI  TO WS-AREA
+           MOVE ADDRFI  TO WS-ADDR
+           MOVE CITYFI  TO WS-CITY
+
+           MOVE FUNCTION CURRENT-DATE(1:14) TO WS-MID
+           MOVE WS-MID TO WS-ID
+           MOVE 0 TO WS-UNITS
+
+           EXEC CICS WRITE
+                FILE('METERKSDS')
+                FROM(WS-METER-REC)
+                RIDFLD(WS-ID)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP = DFHRESP(NORMAL)
+                MOVE WS-MID TO MIDFO
+                MOVE 'METER CREATED SUCCESSFULLY' TO MSGFO
+           ELSE
+                MOVE 'ERROR WRITING RECORD' TO MSGFO
+           END-IF
+
+           PERFORM SEND-SCREEN.
+

@@ -1,0 +1,35 @@
+METUPDM  DFHMSD TYPE=&SYSPARM,                                         X
+               MODE=INOUT,                                             X
+               TIOAPFX=YES,                                            X
+               LANG=COBOL,                                             X
+               STORAGE=AUTO
+METUPDM  DFHMDI SIZE=(24,80)
+TITLE01  DFHMDF POS=(2,25),                                            X
+               LENGTH=30,                                              X
+               ATTRB=(PROT),                                           X
+               INITIAL='***METER UPDATE***'
+MIDF     DFHMDF POS=(5,10),                                            X
+               INITIAL='METER ID:',                                    X
+               LENGTH=20,                                              X
+               ATTRB=(UNPROT,IC)
+FNAMEF   DFHMDF POS=(7,30),                                            X
+               LENGTH=15,                                              X
+               ATTRB=(UNPROT)
+LNAMEF  DFHMDF POS=(8,30),                                             X
+               LENGTH=15,                                              X
+               ATTRB=(UNPROT)
+AREAF    DFHMDF POS=(9,30),                                            X
+               LENGTH=5,                                               X
+               ATTRB=(UNPROT)
+ADDRF    DFHMDF POS=(10,30),                                           X
+               LENGTH=20,                                              X
+               ATTRB=(UNPROT)
+CITYF    DFHMDF POS=(11,30),                                           X
+               LENGTH=15,                                              X
+               ATTRB=(UNPROT)
+MSGF     DFHMDF POS=(15,10),                                           X
+               LENGTH=50,                                              X
+               ATTRB=(PROT)
+         DFHMSD TYPE=FINAL
+               END
+

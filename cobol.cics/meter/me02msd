@@ -1,0 +1,66 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. METMENU.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-RESP-CODE         PIC S9(8) COMP.
+       01 WS-TEXT              PIC X(37)
+            VALUE 'COMMANDS EXECUTED. LOGOFF TO EXIT.'.
+
+           COPY METMENM.
+           COPY DFHAID.
+
+       PROCEDURE DIVISION.
+       0000-MAIN-LINE.
+           IF EIBCALEN = 0
+              PERFORM 2000-SEND-MENU
+           ELSE
+              PERFORM 1000-RECEIVE-MENU
+           END-IF.
+           EXEC CICS RETURN END-EXEC.
+
+       1000-RECEIVE-MENU.
+           EXEC CICS RECEIVE MAP('METMENU')
+                          MAPSET('METMENM')
+                          RESP(WS-RESP-CODE)
+           END-EXEC.
+           IF WS-RESP-CODE = DFHRESP(NORMAL)
+              PERFORM 1100-EVALUATE-INPUT
+           END-IF.
+
+       1100-EVALUATE-INPUT.
+           EVALUATE TRUE
+               WHEN EIBAID = DFHPF3
+                    EXEC CICS SEND TEXT
+                         FROM(WS-TEXT)
+                         ERASE
+                    END-EXEC
+                    EXEC CICS RETURN
+                    END-EXEC
+               WHEN EIBAID = DFHENTER
+                    PERFORM 1200-PROCESS-OPTION
+               WHEN OTHER
+                    MOVE 'INVALID KEY' TO MSGFO
+                    PERFORM 2000-SEND-MENU
+           END-EVALUATE.
+
+       1200-PROCESS-OPTION.
+           EVALUATE OPTI
+               WHEN '1'
+                    EXEC CICS XCTL PROGRAM('METCRE') END-EXEC
+               WHEN '2'
+                    EXEC CICS XCTL PROGRAM('METRED') END-EXEC
+               WHEN '3'
+                    EXEC CICS XCTL PROGRAM('METUPD') END-EXEC
+               WHEN OTHER
+                    MOVE 'INVALID OPTION' TO MSGFO
+                    PERFORM 2000-SEND-MENU
+           END-EVALUATE.
+       2000-SEND-MENU.
+              MOVE LOW-VALUES TO METMENUO
+              EXEC CICS SEND MAP('METMENU')
+                          MAPSET('METMENM')
+                          ERASE
+                          CURSOR
+              END-EXEC.
+
