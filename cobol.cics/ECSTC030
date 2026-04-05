@@ -20,6 +20,7 @@
           05 WS-CITY               PIC X(20).
 
        77 WS-RESP-CODE             PIC S9(08) COMP.
+       77 ERROR-FLAG              PIC 9(01) VALUE 0.
 
       *----------------------------------------------------------------*
       * CUSTOMER DATA
@@ -130,17 +131,45 @@
       *----------------------------------------------------------------*
       * VALIDATION
       *----------------------------------------------------------------*
-           IF WS-FIRST-NAME IS EQUAL TO LOW-VALUES
+           MOVE SPACES TO MSGTXTO.
+           MOVE 0 TO ERROR-FLAG.
+
+           IF WS-FIRST-NAME IS EQUAL TO LOW-VALUES OR
+              WS-FIRST-NAME IS EQUAL TO SPACES
               MOVE 'FIRST NAME IS REQUIRED'    TO MSGTXTO
               MOVE -1                TO FNAMEL
-              PERFORM 3000-SEND-MAP
+              MOVE 1 TO ERROR-FLAG
            END-IF.
 
-           IF WS-LAST-NAME  IS EQUAL TO LOW-VALUES OR
-              WS-AREA-CODE  IS EQUAL TO LOW-VALUES OR
-              WS-ADDRESS    IS EQUAL TO LOW-VALUES OR
-              WS-CITY       IS EQUAL TO LOW-VALUES
-              MOVE 'ALL FIELDS ARE MANDATORY'  TO MSGTXTO
+           IF WS-LAST-NAME IS EQUAL TO LOW-VALUES OR
+              WS-LAST-NAME IS EQUAL TO SPACES
+              MOVE 'LAST NAME IS REQUIRED'     TO MSGTXTO
+              MOVE -1                TO LNAMEL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-AREA-CODE IS EQUAL TO LOW-VALUES OR
+              WS-AREA-CODE IS EQUAL TO SPACES
+              MOVE 'AREA CODE IS REQUIRED'      TO MSGTXTO
+              MOVE -1                TO AREAL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-ADDRESS IS EQUAL TO LOW-VALUES OR
+              WS-ADDRESS IS EQUAL TO SPACES
+              MOVE 'ADDRESS IS REQUIRED'        TO MSGTXTO
+              MOVE -1                TO ADDRL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-CITY IS EQUAL TO LOW-VALUES OR
+              WS-CITY IS EQUAL TO SPACES
+              MOVE 'CITY IS REQUIRED'           TO MSGTXTO
+              MOVE -1                TO CITYL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF ERROR-FLAG = 1
               PERFORM 3000-SEND-MAP
            ELSE
                PERFORM 2300-GENERATE-ID
