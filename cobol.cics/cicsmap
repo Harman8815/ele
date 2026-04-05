@@ -1,6 +1,6 @@
-//OZA266C5 JOB OZA,OZA,MSGLEVEL=(1,1),
+//OZA266C3 JOB OZA,OZA,MSGLEVEL=(1,1),
 //            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
-//  SET CICSMP=EB05MSD
+//  SET CICSMAP=EB03MSD
 //**********************************************************************
 //***     SAMPLE JCL TO COMPILE CICS MAP PROGRAM                     ***
 //***     KEEP USERID IN PLACE OF OZAGSB                             ***
@@ -12,7 +12,7 @@
 //         OUTC=*,
 //         COPYLIB=OZA266.ELE.CPYBK,     *CICS MAP COPYLIB
 //         LOADLIB=OZAADM.CICS.LOADLIB,
-//         MAPSET=EB01MSD                *NAME OF MAPSET
-//COPY.SYSUT1  DD  DSN=OZA266.ELE.SOURCE.CICS.NEW(EB01MSD),DISP=SHR
+//         MAPSET=EB03MSD                *NAME OF MAPSET
+//COPY.SYSUT1  DD  DSN=OZA266.ELE.SOURCE.CICS.NEW(&CICSMAP),DISP=SHR
 //
 
