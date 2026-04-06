@@ -13,13 +13,15 @@
            COPY EB03MSD.
 
        01 WS-COMMAREA.
-          05 WS-FIRST-NAME         PIC X(15).
-          05 WS-LAST-NAME          PIC X(15).
-          05 WS-AREA-CODE          PIC X(10).
-          05 WS-ADDRESS            PIC X(30).
-          05 WS-CITY               PIC X(20).
+          05 WS-FIRST-NAME         PIC X(10).
+          05 WS-LAST-NAME          PIC X(10).
+          05 WS-AREA-CODE          PIC X(6).
+          05 WS-SPACE             PIC X.
+          05 WS-ADDRESS         PIC X(29).
+          05 WS-CITY               PIC X(10).
 
        77 WS-RESP-CODE             PIC S9(08) COMP.
+       77 WS-RESP-DISPLAY-CODE    PIC 9(08) DISPLAY.
 
        77 ERROR-FLAG              PIC 9(01) VALUE 0.
 
@@ -40,12 +42,13 @@
       *----------------------------------------------------------------*
        01 WS-WORK-AREA.
           05 CUST-ID               PIC X(12).
-          05 FIRST-NAME            PIC X(15).
-          05 LAST-NAME             PIC X(15).
-          05 AREA-CODE             PIC X(10).
-          05 ADDRESS-1             PIC X(30).
-          05 CITY                  PIC X(15).
-          05 UNITS                 PIC 9(05).
+          05 FIRST-NAME            PIC X(10).
+          05 LAST-NAME             PIC X(10).
+          05 AREA-CODE             PIC X(6).
+          05 OUT-SPACE             PIC X.
+          05 ADDRESS-1         PIC X(29).
+          05 CITY                  PIC X(10).
+          05 UNITS                 PIC X(5).
 
        77 WS-CUST-ID               PIC X(12).
 
@@ -55,11 +58,12 @@
        LINKAGE SECTION.
 
        01 DFHCOMMAREA.
-          05 LS-FIRST-NAME         PIC X(15).
-          05 LS-LAST-NAME          PIC X(15).
-          05 LS-AREA-CODE          PIC X(10).
-          05 LS-ADDRESS            PIC X(30).
-          05 LS-CITY               PIC X(20).
+          05 LS-FIRST-NAME         PIC X(10).
+          05 LS-LAST-NAME          PIC X(10).
+          05 LS-SPACE             PIC X.
+          05 LS-AREA-CODE          PIC X(6).
+          05 LS-ADDRESS            PIC X(29).
+          05 LS-CITY               PIC X(10).
 
        PROCEDURE DIVISION.
        1000-MAIN-LOGIC.
@@ -208,7 +212,7 @@
       * WRITE TO KSDS
       *----------------------------------------------------------------*
            EXEC CICS WRITE
-                FILE('OZA266.ELE.CUST.KSDS.FILE')
+                FILE('CU01KSDS')
                 FROM(WS-WORK-AREA)
                 RIDFLD(CUST-ID)
                 RESP(WS-RESP-CODE)
@@ -225,18 +229,37 @@
                    PERFORM 3000-SEND-MAP
                WHEN DFHRESP(DUPREC)
                    ADD 1 TO WS-RETRY-CTR
+                   MOVE 'DUPLICATE KEY DETECTED - RETRYING'
+                        TO MSGTXTO
                    IF WS-RETRY-CTR < 10
                        PERFORM 2300-GENERATE-ID
                        PERFORM 2400-WRITE-VSAM
                    ELSE
-                       MOVE 'UNABLE TO GENERATE UNIQUE ID'
+                       MOVE 'MAX RETRIES REACHED - CONTACT ADMIN'
                             TO MSGTXTO
                        MOVE 0 TO WS-RETRY-CTR
                    END-IF
-               WHEN OTHER
-                   MOVE 'ERROR WRITING RECORD'
+               WHEN DFHRESP(NOTFND)
+                   MOVE 'DATASET NOT FOUND - CHECK CUSTKSDS'
                         TO MSGTXTO
-           END-EVALUATE
+               WHEN DFHRESP(DUPKEY)
+                   MOVE 'DUPLICATE KEY ERROR - TRY AGAIN'
+                        TO MSGTXTO
+               WHEN DFHRESP(LENGERR)
+                   MOVE 'RECORD TOO LONG - CHECK DATA LENGTH'
+                        TO MSGTXTO
+               WHEN DFHRESP(NOSPACE)
+                   MOVE 'NO SPACE IN DATASET - CONTACT ADMIN'
+                        TO MSGTXTO
+               WHEN DFHRESP(IOERR)
+                   MOVE 'I/O ERROR - TRY AGAIN LATER'
+                        TO MSGTXTO
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'VSAM ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+               END-EVALUATE
 
            PERFORM 3000-SEND-MAP.
 
