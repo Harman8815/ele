@@ -20,19 +20,8 @@
           05 WS-CITY               PIC X(20).
 
        77 WS-RESP-CODE             PIC S9(08) COMP.
-       77 ERROR-FLAG              PIC 9(01) VALUE 0.
 
-      *----------------------------------------------------------------*
-      * CUSTOMER DATA
-      *----------------------------------------------------------------*
-      *01 WS-CUST-DATA.
-      *   05 WS-F-NAME             PIC X(15).
-      *   05 WS-L-NAME             PIC X(15).
-      *   05 WS-A-CODE             PIC X(10).
-      *   05 WS-A-ADDR             PIC X(30).
-      *   05 WS-C-CITY             PIC X(15).
-      *   05 WS-C-ID               PIC X(12).
-      *   WS-UNITS                 PIC 9(05) VALUE 0.
+       77 ERROR-FLAG              PIC 9(01) VALUE 0.
 
       *----------------------------------------------------------------*
       * ID GENERATION VARIABLES
@@ -46,7 +35,6 @@
           05 WS-RAND-SEED          PIC S9(09) COMP-3 VALUE +0.
           05 WS-RETRY-CTR          PIC 9(02) VALUE 0.
           05 WS-CURRENT-TIME       PIC 9(08).
-
       *----------------------------------------------------------------*
       * VSAM RECORD STRUCTURE
       *----------------------------------------------------------------*
@@ -154,7 +142,6 @@
               MOVE -1                TO AREAL
               MOVE 1 TO ERROR-FLAG
            END-IF.
-
            IF WS-ADDRESS IS EQUAL TO LOW-VALUES OR
               WS-ADDRESS IS EQUAL TO SPACES
               MOVE 'ADDRESS IS REQUIRED'        TO MSGTXTO
@@ -190,17 +177,16 @@
       * GENERATE RANDOM 3 DIGIT NUMBER
       *----------------------------------------------------------------*
            ACCEPT WS-CURRENT-TIME FROM TIME
-           COMPUTE WS-RAND-SEED = FUNCTION RANDOM(WS-CURRENT-TIME) * 1000.
+           COMPUTE WS-RAND-SEED =
+                              FUNCTION RANDOM(WS-CURRENT-TIME) * 1000.
            COMPUTE WS-CUST-RAND-3 = FUNCTION MOD(WS-RAND-SEED, 1000).
-
       *----------------------------------------------------------------*
       * BUILD CUSTOMER ID
       *----------------------------------------------------------------*
            STRING WS-CUST-PREFIX WS-CUST-FN-CHARS WS-CUST-LN-CHARS
                   WS-CUST-AREA-4 WS-CUST-RAND-3
                   DELIMITED BY SIZE
-                  INTO WS-CUST-ID
-
+                  INTO WS-CUST-ID.
            PERFORM 2400-WRITE-VSAM.
 
            EXIT.

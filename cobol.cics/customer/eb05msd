@@ -85,6 +85,8 @@ UN-OLD   DFHMDF POS=(11,30),LENGTH=6,ATTRB=(PROT)
 MSG2-L   DFHMDF POS=(14,10),LENGTH=10,ATTRB=(PROT),                    X
                INITIAL='MESSAGE:'
 MSG2     DFHMDF POS=(14,25),LENGTH=45,ATTRB=(PROT)
+        DFHMDF POS=(18,10),LENGTH=25,ATTRB=(PROT),                     X
+               INITIAL='PF3->EXIT | PF6->CLR SCR '
          DFHMSD TYPE=FINAL
        END
 

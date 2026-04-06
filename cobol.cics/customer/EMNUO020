@@ -77,25 +77,21 @@
            MOVE CHOICEI           TO WS-CHOICE.
            EVALUATE WS-CHOICE
                WHEN 'C'
-                    EXEC CICS XCTL
-                         PROGRAM('ECSTC030')
-                    END-EXEC
+                   EXEC CICS XCTL PROGRAM('ECSTC030') END-EXEC
+                   PERFORM 3000-SEND-MAP
                WHEN 'R'
-                   EXEC CICS XCTL
-                        PROGRAM('ECSTR040')
-                   END-EXEC
+                   EXEC CICS XCTL PROGRAM('ECSTR040') END-EXEC
+                   PERFORM 3000-SEND-MAP
                WHEN 'U'
-                   EXEC CICS XCTL
-                        PROGRAM('ECSTU050')
-                   END-EXEC
-               WHEN 'D'
                    MOVE 'PGM UNDER CONSTRUCTION ' TO MSGTXTO
                    PERFORM 3000-SEND-MAP
+               WHEN '3'
+                   EXEC CICS RETURN END-EXEC
                WHEN OTHER
-                    MOVE 'INVALID OPTION. PLEASE ENTER C, R, U OR D'
+                    MOVE 'INVALID OPTION. PLEASE ENTER C, R, U OR 3'
                           TO MSGTXTO
-                    MOVE -1 TO CHOICEL
-                    PERFORM 3000-SEND-MAP
+                   MOVE -1 TO CHOICEL
+                   PERFORM 3000-SEND-MAP
            END-EVALUATE.
 
        3000-SEND-MAP.

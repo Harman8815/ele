@@ -15,7 +15,9 @@
           05 WS-DUMMY              PIC X(01).
 
        77 WS-RESP-CODE             PIC S9(08) COMP.
+
        77 ERROR-FLAG              PIC 9(01) VALUE 0.
+
        01 WS-MSG                  PIC X(40).
 
        01 WS-CUST-ID               PIC X(12).
@@ -25,7 +27,7 @@
           05 FIRST-NAME            PIC X(15).
           05 LAST-NAME             PIC X(15).
           05 AREA-CODE             PIC X(10).
-          05 ADDRESS               PIC X(30).
+          05 ADDRESS-1             PIC X(30).
           05 CITY                  PIC X(15).
           05 UNITS                 PIC 9(05).
 
@@ -40,12 +42,11 @@
        1000-MAIN-LOGIC.
 
            IF EIBCALEN = 0
-              PERFORM 2000-INITIAL-SCREEN
+               PERFORM 2000-INITIAL-SCREEN
            ELSE
                PERFORM 3000-RECEIVE-MAP
            END-IF.
            EXIT.
-
        2000-INITIAL-SCREEN.
 
            MOVE LOW-VALUES TO EB04MAPO
@@ -90,14 +91,13 @@
       *----------------------------------------------------------------*
            MOVE SPACES TO MSGTXTO.
            MOVE 0 TO ERROR-FLAG.
-
-           IF WS-CUST-ID IS EQUAL TO LOW-VALUES OR
-              WS-CUST-ID IS EQUAL TO SPACES
+           MOVE CIDI TO WS-CUST-ID
+           IF CIDI IS EQUAL TO LOW-VALUES OR
+              CIDI IS EQUAL TO SPACES
               MOVE 'CUSTOMER ID IS REQUIRED' TO MSGTXTO
               MOVE -1 TO CIDL
               MOVE 1 TO ERROR-FLAG
            END-IF.
-
            IF ERROR-FLAG = 1
               PERFORM 4000-SEND-MAP
            ELSE
@@ -106,10 +106,6 @@
 
            EXIT.
        5000-READ-VSAM.
-
-      *----------------------------------------------------------------*
-      * READ CUSTOMER RECORD
-      *----------------------------------------------------------------*
            MOVE CIDI TO WS-CUST-ID
            EXEC CICS READ
                 DATASET('OZA266.ELE.CUST.KSDS.FILE')
@@ -117,15 +113,12 @@
                 INTO(WS-CUST-REC)
                 RESP(WS-RESP-CODE)
            END-EXEC.
-      *----------------------------------------------------------------*
-      * HANDLE RESPONSE
-      *----------------------------------------------------------------*
            EVALUATE WS-RESP-CODE
                WHEN DFHRESP(NORMAL)
-                   MOVE FIRST-NAME TO FNAMEO
-                   MOVE LAST-NAME  TO LNAMEO
+                   MOVE FIRST-NAME TO FNO
+                   MOVE LAST-NAME  TO LNO
                    MOVE AREA-CODE  TO AREAO
-                   MOVE ADDRESS    TO ADDRO
+                   MOVE ADDRESS-1  TO ADDRO
                    MOVE CITY       TO CITYO
                    MOVE UNITS      TO UNITO
                    MOVE 'CUSTOMER RECORD FOUND' TO MSGTXTO
@@ -137,7 +130,6 @@
 
            PERFORM 4000-SEND-MAP.
            EXIT.
-
        4000-SEND-MAP.
 
            EXEC CICS SEND
@@ -156,7 +148,6 @@
               END-EXEC
             END-IF.
            EXIT.
-
        9000-TERMINATE.
 
            MOVE 'PRESS CTRL + BREAK TO EXIT' TO WS-MSG.

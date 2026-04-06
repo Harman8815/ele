@@ -6,57 +6,52 @@ EB04MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
 *----------------------------------------------------------------*
 * TITLE
 *----------------------------------------------------------------*
-TITLE   DFHMDF POS=(2,25),LENGTH=30,ATTRB=PROT,                        X
+TITLE   DFHMDF POS=(2,25),LENGTH=30,ATTRB=(PROT),                      X
                INITIAL='CUSTOMER READ SCREEN'
 
 *----------------------------------------------------------------*
-* INPUT SECTION
+* INPUT FIELD
 *----------------------------------------------------------------*
-TEXT1   DFHMDF POS=(5,10),LENGTH=30,ATTRB=PROT,                        X
-               INITIAL='ENTER CUSTOMER ID:'
-
-        DFHMDF POS=(7,10),LENGTH=15,ATTRB=PROT,                        X
-               INITIAL='CUSTOMER ID :'
-CID     DFHMDF POS=(7,30),LENGTH=12,ATTRB=(UNPROT,FSET)
-        DFHMDF POS=(7,43),LENGTH=01,ATTRB=PROT
+CID-L   DFHMDF POS=(5,10),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='ENTER CUSTOMER ID :'
+CID     DFHMDF POS=(5,35),LENGTH=12,ATTRB=(UNPROT,FSET)
 
 *----------------------------------------------------------------*
 * OUTPUT FIELDS
 *----------------------------------------------------------------*
-        DFHMDF POS=(9,10),LENGTH=15,ATTRB=PROT,                        X
+FN-L    DFHMDF POS=(7,10),LENGTH=15,ATTRB=(PROT),                      X
                INITIAL='FIRST NAME  :'
-FNAMEO  DFHMDF POS=(9,30),LENGTH=15,ATTRB=PROT
-        DFHMDF POS=(9,46),LENGTH=01,ATTRB=PROT
+FN      DFHMDF POS=(7,30),LENGTH=15,ATTRB=(PROT)
 
-        DFHMDF POS=(10,10),LENGTH=15,ATTRB=PROT,                       X
+LN-L    DFHMDF POS=(8,10),LENGTH=15,ATTRB=(PROT),                      X
                INITIAL='LAST NAME   :'
-LNAMEO  DFHMDF POS=(10,30),LENGTH=15,ATTRB=PROT
-        DFHMDF POS=(10,46),LENGTH=01,ATTRB=PROT
+LN      DFHMDF POS=(8,30),LENGTH=15,ATTRB=(PROT)
 
-        DFHMDF POS=(11,10),LENGTH=15,ATTRB=PROT,                       X
+AREA-L  DFHMDF POS=(9,10),LENGTH=15,ATTRB=(PROT),                      X
                INITIAL='AREA CODE   :'
-AREAO   DFHMDF POS=(11,30),LENGTH=10,ATTRB=PROT
-        DFHMDF POS=(11,41),LENGTH=01,ATTRB=PROT
+AREA    DFHMDF POS=(9,30),LENGTH=10,ATTRB=(PROT)
 
-        DFHMDF POS=(12,10),LENGTH=15,ATTRB=PROT,                       X
+ADDR-L  DFHMDF POS=(10,10),LENGTH=15,ATTRB=(PROT),                     X
                INITIAL='ADDRESS     :'
-ADDRO   DFHMDF POS=(12,30),LENGTH=30,ATTRB=PROT
-        DFHMDF POS=(12,61),LENGTH=01,ATTRB=PROT
+ADDR    DFHMDF POS=(10,30),LENGTH=30,ATTRB=(PROT)
 
-        DFHMDF POS=(13,10),LENGTH=15,ATTRB=PROT,                       X
+CITY-L  DFHMDF POS=(11,10),LENGTH=15,ATTRB=(PROT),                     X
                INITIAL='CITY        :'
-CITYO   DFHMDF POS=(13,30),LENGTH=15,ATTRB=PROT
-        DFHMDF POS=(13,46),LENGTH=01,ATTRB=PROT
+CITY    DFHMDF POS=(11,30),LENGTH=15,ATTRB=(PROT)
 
-        DFHMDF POS=(14,10),LENGTH=15,ATTRB=PROT,                       X
+UNIT-L  DFHMDF POS=(12,10),LENGTH=15,ATTRB=(PROT),                     X
                INITIAL='UNITS       :'
-UNITO   DFHMDF POS=(14,30),LENGTH=5,ATTRB=PROT
-        DFHMDF POS=(14,36),LENGTH=01,ATTRB=PROT
+UNIT    DFHMDF POS=(12,30),LENGTH=6,ATTRB=(PROT)
 
-        DFHMDF POS=(16,10),LENGTH=15,ATTRB=PROT,                       X
+*----------------------------------------------------------------*
+* MESSAGE FIELD
+*----------------------------------------------------------------*
+MSG-L   DFHMDF POS=(15,10),LENGTH=15,ATTRB=(PROT),                     X
                INITIAL='MESSAGE     :'
-MSGTXT  DFHMDF POS=(16,30),LENGTH=40,ATTRB=PROT
-        DFHMDF POS=(18,10),LENGTH=25,ATTRB=PROT,                       X
+MSGTXT  DFHMDF POS=(15,30),LENGTH=45,ATTRB=(PROT)
+
+        DFHMDF POS=(18,10),LENGTH=25,ATTRB=(PROT),                     X
                INITIAL='PF3->EXIT | PF6->CLR SCR '
         DFHMSD TYPE=FINAL
        END
+
