@@ -11,11 +11,22 @@
            COPY DFHAID.
            COPY EB04MSD.
 
+       01 WS-CICS-RESPONSE-CODES.
+          05 DFHRESP-NORMAL        PIC S9(08) COMP VALUE 0.
+          05 DFHRESP-NOTFND        PIC S9(08) COMP VALUE +13.
+          05 DFHRESP-LENGERR       PIC S9(08) COMP VALUE +16.
+          05 DFHRESP-IOERR         PIC S9(08) COMP VALUE +18.
+          05 DFHRESP-NOTOPEN       PIC S9(08) COMP VALUE +19.
+          05 DFHRESP-ENOTFND       PIC S9(08) COMP VALUE +20.
+          05 DFHRESP-ILLLOG        PIC S9(08) COMP VALUE +28.
+          05 DFHRESP-TERMERR       PIC S9(08) COMP VALUE +32.
+          05 DFHRESP-DUPKEY        PIC S9(08) COMP VALUE +33.
+          05 DFHRESP-DUPREC        PIC S9(08) COMP VALUE +34.
        01 WS-COMMAREA.
           05 WS-DUMMY              PIC X(01).
 
        77 WS-RESP-CODE             PIC S9(08) COMP.
-
+       77 WS-RESP-DISPLAY-CODE    PIC 9(08) DISPLAY.
        77 ERROR-FLAG              PIC 9(01) VALUE 0.
 
        01 WS-MSG                  PIC X(40).
@@ -24,11 +35,12 @@
 
        01 WS-CUST-REC.
           05 CUST-ID               PIC X(12).
-          05 FIRST-NAME            PIC X(15).
-          05 LAST-NAME             PIC X(15).
-          05 AREA-CODE             PIC X(10).
-          05 ADDRESS-1             PIC X(30).
-          05 CITY                  PIC X(15).
+          05 FIRST-NAME            PIC X(10).
+          05 LAST-NAME             PIC X(10).
+          05 AREA-CODE             PIC X(6).
+          05 OUT-SPACE             PIC X.
+          05 ADDRESS-1             PIC X(29).
+          05 CITY                  PIC X(10).
           05 UNITS                 PIC 9(05).
 
 
@@ -63,9 +75,25 @@
                 INTO(EB04MAPI)
                 RESP(WS-RESP-CODE)
            END-EXEC.
-           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
-              PERFORM 3100-EVAL-USER-RESP
-           END-IF.
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   PERFORM 3100-EVAL-USER-RESP
+               WHEN DFHRESP-LENGERR
+                   MOVE 'RECEIVE DATA TOO LONG' TO MSGTXTO
+                   PERFORM 4000-SEND-MAP
+               WHEN DFHRESP-TERMERR
+                   MOVE 'TERMINAL ERROR - TRY AGAIN' TO MSGTXTO
+                   PERFORM 4000-SEND-MAP
+               WHEN DFHRESP-ILLLOG
+                   MOVE 'INVALID RECEIVE LOGIC' TO MSGTXTO
+                   PERFORM 4000-SEND-MAP
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'RECEIVE ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+                   PERFORM 4000-SEND-MAP
+           END-EVALUATE.
            EXIT.
 
        3100-EVAL-USER-RESP.
@@ -108,13 +136,13 @@
        5000-READ-VSAM.
            MOVE CIDI TO WS-CUST-ID
            EXEC CICS READ
-                DATASET('OZA266.ELE.CUST.KSDS.FILE')
+                DATASET('CU01KSDS')
                 RIDFLD(WS-CUST-ID)
                 INTO(WS-CUST-REC)
                 RESP(WS-RESP-CODE)
            END-EXEC.
            EVALUATE WS-RESP-CODE
-               WHEN DFHRESP(NORMAL)
+               WHEN DFHRESP-NORMAL
                    MOVE FIRST-NAME TO FNO
                    MOVE LAST-NAME  TO LNO
                    MOVE AREA-CODE  TO AREAO
@@ -122,10 +150,30 @@
                    MOVE CITY       TO CITYO
                    MOVE UNITS      TO UNITO
                    MOVE 'CUSTOMER RECORD FOUND' TO MSGTXTO
-               WHEN DFHRESP(NOTFND)
+               WHEN DFHRESP-NOTFND
                    MOVE 'CUSTOMER NOT FOUND' TO MSGTXTO
+                   MOVE -1 TO CIDL
+               WHEN DFHRESP-LENGERR
+                   MOVE 'RECORD LENGTH ERROR - CHECK DATASET' TO MSGTXTO
+                   MOVE -1 TO CIDL
+               WHEN DFHRESP-IOERR
+                   MOVE 'I/O ERROR - TRY AGAIN LATER' TO MSGTXTO
+                   MOVE -1 TO CIDL
+               WHEN DFHRESP-NOTOPEN
+                   MOVE 'DATASET NOT OPEN - CONTACT ADMIN' TO MSGTXTO
+                   MOVE -1 TO CIDL
+               WHEN DFHRESP-ENOTFND
+                   MOVE 'DATASET NOT FOUND - CHECK NAME' TO MSGTXTO
+                   MOVE -1 TO CIDL
+               WHEN DFHRESP-ILLLOG
+                   MOVE 'INVALID LOGIC ERROR - CONTACT ADMIN' TO MSGTXTO
+                   MOVE -1 TO CIDL
                WHEN OTHER
-                   MOVE 'ERROR READING RECORD' TO MSGTXTO
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'READ ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+                   MOVE -1 TO CIDL
            END-EVALUATE.
 
            PERFORM 4000-SEND-MAP.
@@ -140,24 +188,43 @@
                 ERASE
                 CURSOR
            END-EXEC.
-           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
-              EXEC CICS RETURN
-                   TRANSID('EB04')
-                   COMMAREA(WS-COMMAREA)
-                   LENGTH(LENGTH OF WS-COMMAREA)
-              END-EXEC
-            END-IF.
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                  EXEC CICS RETURN
+                       TRANSID('EB04')
+                       COMMAREA(WS-COMMAREA)
+                       LENGTH(LENGTH OF WS-COMMAREA)
+                  END-EXEC
+               WHEN DFHRESP-LENGERR
+                   MOVE 'MAP DATA TOO LONG' TO MSGTXTO
+               WHEN DFHRESP-TERMERR
+                   MOVE 'TERMINAL ERROR - TRY AGAIN' TO MSGTXTO
+               WHEN DFHRESP-ILLLOG
+                   MOVE 'INVALID SEND LOGIC' TO MSGTXTO
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'SEND ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+           END-EVALUATE.
+
            EXIT.
        9000-TERMINATE.
-
            MOVE 'PRESS CTRL + BREAK TO EXIT' TO WS-MSG.
            EXEC CICS SEND TEXT
                            FROM(WS-MSG)
                            RESP(WS-RESP-CODE)
                            ERASE
            END-EXEC.
-           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
-               EXEC CICS RETURN END-EXEC
-           END-IF.
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   EXEC CICS RETURN END-EXEC
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'SEND TEXT ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+                   EXEC CICS RETURN END-EXEC
+           END-EVALUATE.
 
 
