@@ -1,0 +1,17 @@
+//OZA265C  JOB OZA,OZA,MSGLEVEL=(1,1),
+//             CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID,REGION=0M
+//   SET CBLPGM=HIGHCONS
+//**********************************************************************
+//***    KEEP USERID IN PLACE OF OZAGSB IN JOBNAME OZAGSBCL          ***
+//***    SAMPLE JCL TO COMPILE & LINK COBOL BATCH PROGRAM            ***
+//***    COMPILE.SYSIN ---> COBOL SOURCE PROGRAM                     ***
+//***    COMPILE.SYSLIB ---> PROGRAM COPYBOOK LIBRARY                ***
+//***    LKED.SYSLMOD ---> LOAD MODULE                               ***
+//**********************************************************************
+//JOBPROC  JCLLIB ORDER=OZA265.USER.PROCLIB
+//COBCL    EXEC COBCL
+//COMPILE.SYSIN  DD  DSN=OZA265.ELE.SOURCE(&CBLPGM),DISP=SHR
+//COMPILE.SYSLIB DD  DSN=OZAGSB.USER.COPYLIB,DISP=SHR
+//LKED.SYSLMOD DD  DSN=OZA265.TRGA5.COBOL.LOADLIB(&CBLPGM),DISP=SHR
+//
+

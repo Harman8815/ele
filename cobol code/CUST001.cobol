@@ -98,8 +98,8 @@
           05 WS-CUST-PREFIX        PIC X VALUE 'C'.
           05 WS-CUST-FN-CHARS      PIC X(2).
           05 WS-CUST-LN-CHARS      PIC X(2).
-          05 WS-CUST-AREA-4        PIC 9(4).
           05 WS-CUST-RAND-3        PIC 9(3).
+          05 WS-CUST-AREA-4        PIC 9(4).
 
        01 WS-ERROR-FLAGS.
           05 WS-ERROR-RECORD-FLAG  PIC 9.
@@ -224,6 +224,12 @@
                   INTO CUST-ID
            END-STRING.
 
+           STRING WS-CUST-PREFIX WS-CUST-FN-CHARS WS-CUST-LN-CHARS
+                  WS-CUST-AREA-4 WS-CUST-RAND-3
+                  DELIMITED BY SIZE
+                  INTO CUST-ID
+           END-STRING.
+
            DISPLAY 'ATTEMPTING CUSTOMER ID : ' CUST-ID.
 
            WRITE MO01-CUSTOMER-RECORD
@@ -258,3 +264,4 @@
            DISPLAY '----------------------------------------'
 
            STOP RUN.
+

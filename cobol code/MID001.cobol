@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID.  MTR002.
+       PROGRAM-ID.  MTR001.
 
        ENVIRONMENT DIVISION.
        CONFIGURATION SECTION.
@@ -33,6 +33,7 @@
        FILE SECTION.
 
        FD TI01-METER-FILE
+           RECORDING MODE          IS F
            RECORD CONTAINS         12  CHARACTERS.
 
        01 TI01-METER-RECORD.
@@ -223,16 +224,14 @@
            SET VALID-RECORD-FLAG       TO TRUE.
 
            IF IN-PREV-READ IS EQUAL TO SPACES
-              DISPLAY 'METER PREV READ ERROR - PREV_READ REQUIRED'  
-                      ' FOR METER'
+              DISPLAY 'METER PREV READ ERROR - P_R FOR METER'           R METER'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
            END-IF.
 
            IF IN-CURR-READ IS EQUAL TO SPACES
-              DISPLAY 'METER CURR READ ERROR - CURR_READ REQUIRED'
-                      ' FOR METER'
+              DISPLAY 'METER CUR READ ERR - C_R  FOR METER'              METER'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
@@ -255,19 +254,19 @@
                   DELIMITED BY SIZE
                   INTO MTR-ID
            END-STRING.
-
            MOVE CUST-KEY                  TO MTR-CUST-ID.
+
            COMPUTE MTR-PREV-READ = FUNCTION NUMVAL(IN-PREV-READ)
            COMPUTE MTR-CURR-READ = FUNCTION NUMVAL(IN-CURR-READ)
 
-           DISPLAY 'ATTEMPTING METER: ' MTR-ID ' FOR CUST: ' MTR-CUST-ID
+           DISPLAY 'ATTEMPTING METER FOR CUST: ' MTR-CUST-ID
                    ' PREV READ: ' MTR-PREV-READ
                    ' CURR READ: ' MTR-CURR-READ.
 
            WRITE MO01-METER-RECORD
                INVALID KEY
                    IF WS-KSDS-STATUS = '22'
-                      DISPLAY 'DUPLICATE KEY DETECTED: ' MTR-ID
+                      DISPLAY 'DUPLICATE KEY DETECTED: ' MTR-CUST-ID
                               ' - RETRYING...'
                       ADD 1 TO WS-DUP-CTR
                       ADD 1 TO WS-RETRY-CTR
@@ -301,3 +300,4 @@
            DISPLAY '----------------------------------------'
 
            STOP RUN.
+

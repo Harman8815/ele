@@ -50,9 +50,9 @@
 
        FD TO01-HIGH-CONS-RPT
            RECORDING MODE          IS F
-           RECORD CONTAINS         72 CHARACTERS.
+           RECORD CONTAINS         139 CHARACTERS.
 
-       01 TO01-HIGH-CONS-RPT-RECORD PIC X(72).
+       01 TO01-HIGH-CONS-RPT-RECORD PIC X(133).
 
        WORKING-STORAGE SECTION.
 
@@ -114,48 +114,47 @@
           05 WS-SORT-COUNT         PIC 9(04) VALUE ZEROS.
 
        01 WS-REPORT-HEADER1.
-          05 FILLER               PIC X(32) VALUE SPACES.
-          05 FILLER               PIC X(15) VALUE 'top5 high Report'.
-          05 FILLER               PIC X(20) VALUE SPACES.
+          05 FILLER               PIC X(40) VALUE SPACES.
+          05 FILLER               PIC X(30) VALUE 'top5 high Report'.
+          05 FILLER               PIC X(53) VALUE SPACES.
           05 FILLER               PIC X(5)  VALUE 'PAGE'.
           05 WS-RPT-PAGE-NUM      PIC ZZ9.
        01 WS-REPORT-HEADER2.
-          05 FILLER               PIC X(32) VALUE SPACES.
-          05 FILLER               PIC X(14) VALUE '--------------'.
-          05 FILLER               PIC X(26) VALUE SPACES.
+          05 FILLER               PIC X(40) VALUE SPACES.
+          05 FILLER               PIC X(30) VALUE '--------------'.
        01 WS-REPORT-HEADER3.
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 FILLER               PIC X(4)  VALUE 'rank'.
-          05 FILLER               PIC X(3)  VALUE SPACES.
-          05 FILLER               PIC X(10) VALUE 'CUST ID'.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 FILLER               PIC X(8)  VALUE 'rank'.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 FILLER               PIC X(12) VALUE 'CUST ID'.
           05 FILLER               PIC X(2)  VALUE SPACES.
           05 FILLER               PIC X(10) VALUE 'FIRST NAME'.
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 FILLER               PIC X(9)  VALUE 'LAST NAME'.
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 FILLER               PIC X(4)  VALUE 'AREA'.
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 FILLER               PIC X(5)  VALUE 'UNITS'.
-          05 FILLER               PIC X(20) VALUE SPACES.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 FILLER               PIC X(10) VALUE 'LAST NAME'.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 FILLER               PIC X(6)  VALUE 'AREA'.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 FILLER               PIC X(10) VALUE 'UNITS'.
+          05 FILLER               PIC X(2)  VALUE SPACES.
        01 WS-REPORT-DETAIL.
           05 FILLER               PIC X(3)  VALUE SPACES.
           05 WS-RPT-RANK          PIC Z9.
           05 FILLER               PIC X(2)  VALUE SPACES.
-          05 WS-RPT-CUST-ID       PIC X(13).
-          05 FILLER               PIC X(1)  VALUE SPACES.
+          05 WS-RPT-CUST-ID       PIC X(12).
+          05 FILLER               PIC X(2)  VALUE SPACES.
           05 WS-RPT-FIRST-NAME    PIC X(10).
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 WS-RPT-LAST-NAME     PIC X(9).
-          05 FILLER               PIC X(1)  VALUE SPACES.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 WS-RPT-LAST-NAME     PIC X(10).
+          05 FILLER               PIC X(2)  VALUE SPACES.
           05 WS-RPT-AREA          PIC X(6).
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 WS-RPT-CITY          PIC X(7).
-          05 FILLER               PIC X(1)  VALUE SPACES.
-          05 WS-RPT-UNITS         PIC ZZ9.
-          05 FILLER               PIC X(13) VALUE SPACES.
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 WS-RPT-CITY          PIC X(10).
+          05 FILLER               PIC X(2)  VALUE SPACES.
+          05 WS-RPT-UNITS         PIC ZZZ,ZZ9.
+          05 FILLER               PIC X(52) VALUE SPACES.
 
        01 WS-REPORT-FOOTER.
-          05 FILLER               PIC X(60) VALUE SPACES.
+          05 FILLER               PIC X(120) VALUE SPACES.
           05 FILLER               PIC X(5)   VALUE 'PAGE:'.
           05 WS-FTR-PAGE          PIC ZZ9.
        01 WS-FOUND-FLAG PIC X VALUE 'N'.
@@ -311,13 +310,12 @@
            DISPLAY '----------------------------------------'
            DISPLAY 'FINDING TOP 5 USING MAX APPROACH ......'
            DISPLAY '----------------------------------------'
-
            PERFORM VARYING WS-TEMP-LOOP-CTR1 FROM 1 BY 1
                      UNTIL WS-TEMP-LOOP-CTR1 > 5
               MOVE 0 TO WS-TOP-UNITS(WS-TEMP-LOOP-CTR1)
               MOVE 0 TO WS-TOP-IDX(WS-TEMP-LOOP-CTR1)
            END-PERFORM
-           
+
            PERFORM VARYING WS-RANK-COUNTER FROM 1 BY 1
                      UNTIL WS-RANK-COUNTER > 5
                       OR WS-RANK-COUNTER > WS-HIGH-COUNT
@@ -327,34 +325,36 @@
        2310-FIND-NEXT-MAX SECTION.
            MOVE 0 TO WS-TEMP-UNITS
            MOVE 0 TO WS-TEMP-INDEX
-           
+
            PERFORM VARYING WS-HIGH-LOOP-CTR FROM 1 BY 1
-                     UNTIL WS-HIGH-LOOP-CTR > WS-HIGH-COUNT
+                     UNTIL WS-HIGH-LOOP-CTR > WS-high-COUNT
               SET WS-HIGH-IDX TO WS-HIGH-LOOP-CTR
-              
               MOVE 'N' TO WS-FOUND-FLAG
               PERFORM VARYING WS-TEMP-LOOP-CTR1 FROM 1 BY 1
                         UNTIL WS-TEMP-LOOP-CTR1 >= WS-RANK-COUNTER
                            OR WS-FOUND-FLAG = 'Y'
                  IF WS-HIGH-LOOP-CTR = WS-TOP-IDX(WS-TEMP-LOOP-CTR1)
                     MOVE 'Y' TO WS-FOUND-FLAG
-                 END-IF
-              END-PERFORM
-              
+                  END-IF
+
+               END-PERFORM
+
               IF WS-FOUND-FLAG NOT = 'Y'
                  IF WS-H-UNITS(WS-HIGH-IDX) > WS-TEMP-UNITS
                     MOVE WS-H-UNITS(WS-HIGH-IDX) TO WS-TEMP-UNITS
                     MOVE WS-HIGH-LOOP-CTR TO WS-TEMP-INDEX
                  END-IF
               END-IF
-              
+
+
               MOVE 'N' TO WS-FOUND-FLAG
            END-PERFORM
-           
+
            IF WS-TEMP-INDEX > 0
               MOVE WS-TEMP-UNITS TO WS-TOP-UNITS(WS-RANK-COUNTER)
               MOVE WS-TEMP-INDEX TO WS-TOP-IDX(WS-RANK-COUNTER)
            END-IF.
+
        2400-WRITE-TOP-FIVE-REPORT SECTION.
            DISPLAY '----------------------------------------'
            DISPLAY 'WRITING TOP 5 HIGH CONSUMERS REPORT .....'
@@ -362,12 +362,11 @@
 
            PERFORM VARYING WS-RANK-COUNTER FROM 1 BY 1
                      UNTIL WS-RANK-COUNTER > 5
-                      OR WS-RANK-COUNTER > WS-HIGH-COUNT
+                     OR WS-RANK-COUNTER > WS-HIGH-COUNT
               IF WS-TOP-IDX(WS-RANK-COUNTER) > 0
                  PERFORM 2410-WRITE-SINGLE-RECORD
               END-IF
            END-PERFORM.
-
        2410-WRITE-SINGLE-RECORD SECTION.
            MOVE WS-TOP-IDX(WS-RANK-COUNTER) TO WS-HIGH-LOOP-CTR
            SET WS-HIGH-IDX TO WS-HIGH-LOOP-CTR
