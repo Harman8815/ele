@@ -70,14 +70,11 @@
            MOVE CHOICEI           TO WS-CHOICE
            EVALUATE WS-CHOICE
                WHEN '1'
-                    MOVE 'PGM UNDER CONSTRUCTION' TO MSGTXTO
-                    PERFORM 2000-SEND-MAP
+                    EXEC CICS XCTL PROGRAM('MTRCR001') END-EXEC
                WHEN '2'
-                    MOVE 'PGM UNDER CONSTRUCTION' TO MSGTXTO
-                    PERFORM 2000-SEND-MAP
+                    EXEC CICS XCTL PROGRAM('MTRRD002') END-EXEC
                WHEN '3'
-                    MOVE 'PGM UNDER CONSTRUCTION' TO MSGTXTO
-                    PERFORM 2000-SEND-MAP
+                    EXEC CICS XCTL PROGRAM('MTRUP003') END-EXEC
                WHEN OTHER
                     MOVE 'INVALID OPTION' TO MSGTXTO
                     PERFORM 2000-SEND-MAP

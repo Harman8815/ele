@@ -1,102 +1,109 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. METUPD.
+       PROGRAM-ID. MTRUP003.
 
        DATA DIVISION.
 
        WORKING-STORAGE SECTION.
 
-       01 WS-RESP    PIC S9(8) COMP.
+       EXEC SQL INCLUDE SQLCA END-EXEC.
 
+       01 WS-RESP-CODE   PIC S9(8) COMP.
+       01 WS-METER-ID    PIC X(12).
+       01 WS-NEW-CURR    PIC 9(6).
+       01 WS-OLD-CURR    PIC 9(6).
        01 WS-METER-REC.
-           05 WS-ID    PIC X(20).
-           05 WS-FNAME PIC X(15).
-           05 WS-LNAME PIC X(15).
-           05 WS-AREA  PIC X(5).
-           05 WS-ADDR  PIC X(20).
-           05 WS-CITY  PIC X(15).
-           05 WS-UNITS PIC 9(5).
+         05 WS-CUSTID    PIC X(12).
+         05 WS-METERID   PIC X(12).
+         05 WS-PREVREAD  PIC 9(6).
+         05 WS-CURRREAD  PIC 9(6).
 
-       COPY METUPDM.
+       01 WS-FORMATTED-FIELDS.
+         05 WS-PREV-STR   PIC X(6).
+         05 WS-CURR-STR   PIC X(6).
+
+       COPY MTR04MSD.
 
        PROCEDURE DIVISION.
 
            IF EIBCALEN = 0
-               PERFORM 1000-SEND-SCREEN
+             PERFORM 1000-SEND-SCREEN
            ELSE
-               PERFORM 2000-RECEIVE-SCREEN
-               PERFORM 3000-PROCESS-DATA
+             PERFORM 2000-RECEIVE-SCREEN
+             PERFORM 3000-PROCESS-DATA
            END-IF
 
-           EXEC CICS RETURN END-EXEC.
+       EXEC CICS RETURN END-EXEC.
 
        1000-SEND-SCREEN.
            MOVE SPACES TO MSGFO
            EXEC CICS SEND MAP('METUPDM')
-           MAPSET('METUPDM') ERASE END-EXEC.
+                          MAPSET('MTR04MSD') ERASE END-EXEC.
 
        2000-RECEIVE-SCREEN.
            EXEC CICS RECEIVE MAP('METUPDM')
-           MAPSET('METUPDM') END-EXEC.
+                          MAPSET('MTR04MSD') END-EXEC.
 
        3000-PROCESS-DATA.
 
-           MOVE MIDFI TO WS-ID
+           MOVE METIDF TO WS-METER-ID
 
-           EXEC CICS READ
-                FILE('METERKSDS')
-                INTO(WS-METER-REC)
-                RIDFLD(WS-ID)
-                RESP(WS-RESP)
+           EXEC SQL
+             SELECT CUSTOMER_ID, METER_ID, PREV_READ, CURR_READ
+             INTO :WS-CUSTID, :WS-METERID, :WS-PREVREAD, :WS-CURRREAD
+             FROM POMS_METER
+             WHERE METER_ID = :WS-METER-ID
            END-EXEC
 
-           IF WS-RESP = DFHRESP(NORMAL)
+           IF SQLCODE = 0
+             MOVE WS-CUSTID         TO CUSTIDF
+             MOVE WS-METERID        TO METIDF
+             MOVE WS-PREVREAD       TO WS-PREV-STR
+             MOVE WS-CURRREAD       TO WS-CURR-STR
+             MOVE WS-PREV-STR       TO PREVF
+             MOVE WS-CURR-STR       TO CURRF
+             MOVE WS-CURRREAD       TO WS-OLD-CURR
 
-           IF FNAMEFI NOT = SPACES
-                MOVE FNAMEFI TO WS-FNAME
-           END-IF
+             IF NEWCURRF NOT = SPACES AND NEWCURRF NOT = ZEROS
+                MOVE NEWCURRF TO WS-NEW-CURR
+                
+                IF WS-NEW-CURR > WS-OLD-CURR
+                   EXEC SQL
+                     UPDATE POMS_METER
+                     SET PREV_READ = CURR_READ,
+                         CURR_READ = :WS-NEW-CURR
+                     WHERE METER_ID = :WS-METER-ID
+                   END-EXEC
 
-           IF LNAMEFI NOT = SPACES
-                MOVE LNAMEFI TO WS-LNAME
-           END-IF
-
-           IF AREAFI NOT = SPACES
-                MOVE AREAFI TO WS-AREA
-           END-IF
-
-           IF ADDRFI NOT = SPACES
-                MOVE ADDRFI TO WS-ADDR
-           END-IF
-
-           IF CITYFI NOT = SPACES
-                MOVE CITYFI TO WS-CITY
-           END-IF
-
-           EXEC CICS REWRITE
-                FILE('METERKSDS')
-                FROM(WS-METER-REC)
-                RESP(WS-RESP)
-           END-EXEC
-
-           IF WS-RESP = DFHRESP(NORMAL)
-                MOVE 'UPDATE SUCCESSFUL' TO MSGFO
+                   IF SQLCODE = 0
+                      MOVE WS-NEW-CURR TO WS-CURR-STR
+                      MOVE WS-OLD-CURR TO WS-PREV-STR
+                      MOVE WS-CURR-STR TO CURRF
+                      MOVE WS-PREV-STR TO PREVF
+                      MOVE 'METER UPDATED SUCCESSFULLY' TO MSGFO
+                   ELSE
+                      MOVE 'ERROR UPDATING METER' TO MSGFO
+                   END-IF
+                ELSE
+                   MOVE 'NEW READ MUST BE GREATER THAN CURRENT' TO MSGFO
+                END-IF
+             ELSE
+                MOVE 'ENTER NEW CURRENT READING' TO MSGFO
+             END-IF
            ELSE
-                MOVE 'ERROR UPDATING RECORD' TO MSGFO
-           END-IF
-
-           ELSE
-                MOVE 'METER NOT FOUND' TO MSGFO
+             MOVE 'METER NOT FOUND' TO MSGFO
+             MOVE SPACES TO CUSTIDF PREVF CURRF
            END-IF
 
            PERFORM 1000-SEND-SCREEN.
+
        9000-TERMINATE.
 
-           MOVE 'PRESS CTRL + BREAK TO EXIT' TO MSGTXTO.
+           MOVE 'PRESS ENTER TO EXIT' TO MSGFO.
            EXEC CICS SEND TEXT
-                           FROM(MSGTXTO)
+                           FROM(MSGFO)
                            RESP(WS-RESP-CODE)
                            ERASE
            END-EXEC.
            IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
                EXEC CICS RETURN END-EXEC
            END-IF.
-

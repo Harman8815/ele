@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. MTRRD003.
+       PROGRAM-ID. MTRRD002.
 
        DATA DIVISION.
 
@@ -8,12 +8,16 @@
        EXEC SQL INCLUDE SQLCA END-EXEC.
 
        01 WS-RESP-CODE   PIC S9(8) COMP.
-       01 WS-ID          PIC X(12)
+       01 WS-METER-ID    PIC X(12).
        01 WS-METER-REC.
-         05 WS-CUSTID    PIC X(14).
-         05 WS-MTRID     PIC X(12).
-         05 WS-PREVREAD  PIC X(6).
-         05 WS-CURRREAD  PIC X(6).
+         05 WS-CUSTID    PIC X(12).
+         05 WS-METERID   PIC X(12).
+         05 WS-PREVREAD  PIC 9(6).
+         05 WS-CURRREAD  PIC 9(6).
+
+       01 WS-FORMATTED-FIELDS.
+         05 WS-PREV-STR   PIC X(6).
+         05 WS-CURR-STR   PIC X(6).
 
        COPY MTR03MSD.
 
@@ -29,45 +33,48 @@
        EXEC CICS RETURN END-EXEC.
 
        1000-SEND-SCREEN.
-           MOVE SPACES TO MSGTXTO
-           EXEC CICS SEND MAP('MTR03MSD')
+           MOVE SPACES TO MSGFO
+           EXEC CICS SEND MAP('METREADM')
                           MAPSET('MTR03MSD') ERASE END-EXEC.
 
        2000-RECEIVE-SCREEN.
-           EXEC CICS RECEIVE MAP('MTR03MSD')
+           EXEC CICS RECEIVE MAP('METREADM')
                           MAPSET('MTR03MSD') END-EXEC.
 
        3000-PROCESS-DATA.
 
-           MOVE METID TO WS-ID
+           MOVE METIDF TO WS-METER-ID
 
            EXEC SQL
-             SELECT CUSTID,MTRID,PREVREAD,CURRREAD
-             INTO :WS-CUSTID,:WS-MTRID,:WS-PREVREAD,:WS-CURRREAD
+             SELECT CUSTOMER_ID, METER_ID, PREV_READ, CURR_READ
+             INTO :WS-CUSTID, :WS-METERID, :WS-PREVREAD, :WS-CURRREAD
              FROM POMS_METER
-             WHERE ID=:WS-ID
+             WHERE METER_ID = :WS-METER-ID
            END-EXEC
 
            IF SQLCODE = 0
-             MOVE WS-CUSTID         TO CUSTIDO
-             MOVE WS-MTRID          TO MTRIDO
-             MOVE WS-PREVREAD       TO PREVREADO
-             MOVE WS-CURRREAD       TO CURRREADO
-             MOVE 'RECORD FOUND'    TO MSGTXTO
+             MOVE WS-CUSTID         TO CUSTIDF
+             MOVE WS-METERID        TO METIDF
+             MOVE WS-PREVREAD       TO WS-PREV-STR
+             MOVE WS-CURRREAD       TO WS-CURR-STR
+             MOVE WS-PREV-STR       TO PREVF
+             MOVE WS-CURR-STR       TO CURRF
+             MOVE 'RECORD FOUND'    TO MSGFO
            ELSE
-             MOVE 'METER NOT FOUND' TO MSGTXTO
+             MOVE 'METER NOT FOUND' TO MSGFO
+             MOVE SPACES TO CUSTIDF PREVF CURRF
            END-IF
 
            PERFORM 1000-SEND-SCREEN.
+
        9000-TERMINATE.
 
-           MOVE 'PRESS CTRL + BREAK TO EXIT' TO MSGTXTO.
+           MOVE 'PRESS ENTER TO EXIT' TO MSGFO.
            EXEC CICS SEND TEXT
-                           FROM(MSGTXTO)
+                           FROM(MSGFO)
                            RESP(WS-RESP-CODE)
                            ERASE
            END-EXEC.
            IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
                EXEC CICS RETURN END-EXEC
            END-IF.
-

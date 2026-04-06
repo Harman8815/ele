@@ -1,0 +1,90 @@
+IDENTIFICATION DIVISION.
+       PROGRAM-ID. MTRCR001.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       EXEC SQL INCLUDE SQLCA END-EXEC.
+
+       01 WS-RESP-CODE   PIC S9(8) COMP.
+       01 WS-CUSTOMER-ID  PIC X(12).
+       01 WS-METER-ID     PIC X(12).
+       01 WS-INITIAL-READ PIC 9(6) VALUE 0.
+       01 WS-METER-REC.
+         05 WS-CUSTID    PIC X(12).
+         05 WS-METERID   PIC X(12).
+         05 WS-PREVREAD  PIC 9(6).
+         05 WS-CURRREAD  PIC 9(6).
+
+       COPY MTRCRMSD.
+
+       PROCEDURE DIVISION.
+
+           IF EIBCALEN = 0
+             PERFORM 1000-SEND-SCREEN
+           ELSE
+             PERFORM 2000-RECEIVE-SCREEN
+             PERFORM 3000-PROCESS-DATA
+           END-IF
+
+       EXEC CICS RETURN END-EXEC.
+
+       1000-SEND-SCREEN.
+           MOVE SPACES TO MSGFO
+           EXEC CICS SEND MAP('METERCM')
+                          MAPSET('MTRCRMSD') ERASE END-EXEC.
+
+       2000-RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('METERCM')
+                          MAPSET('MTRCRMSD') END-EXEC.
+
+       3000-PROCESS-DATA.
+
+           IF CUSTIDF NOT = SPACES
+              MOVE CUSTIDF TO WS-CUSTOMER-ID
+              
+              PERFORM 3110-GENERATE-METER-ID
+              
+              MOVE WS-CUSTOMER-ID TO WS-CUSTID
+              MOVE WS-METER-ID TO WS-METERID
+              MOVE WS-METER-ID TO METERIDF
+              MOVE WS-INITIAL-READ TO WS-PREVREAD
+              MOVE WS-INITIAL-READ TO WS-CURRREAD
+
+              EXEC SQL
+                INSERT INTO POMS_METER 
+                (CUSTOMER_ID, METER_ID, PREV_READ, CURR_READ)
+                VALUES (:WS-CUSTID, :WS-METERID, :WS-PREVREAD, :WS-CURRREAD)
+              END-EXEC
+
+              IF SQLCODE = 0
+                 MOVE 'METER CREATED SUCCESSFULLY' TO MSGFO
+                 MOVE SPACES TO CUSTIDF
+              ELSE
+                 MOVE 'ERROR CREATING METER' TO MSGFO
+              END-IF
+           ELSE
+              MOVE 'ENTER CUSTOMER ID' TO MSGFO
+           END-IF
+
+           PERFORM 1000-SEND-SCREEN.
+
+       3110-GENERATE-METER-ID.
+
+           ACCEPT WS-DATE FROM DATE YYYYMMDD
+           STRING 'MTR-' WS-DATE(5:4) '-' WS-CUSTOMER-ID(1:4)
+                  DELIMITED BY SIZE
+                  INTO WS-METER-ID.
+
+       9000-TERMINATE.
+
+           MOVE 'PRESS ENTER TO EXIT' TO MSGFO.
+           EXEC CICS SEND TEXT
+                           FROM(MSGFO)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+               EXEC CICS RETURN END-EXEC
+           END-IF.
