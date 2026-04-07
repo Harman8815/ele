@@ -1,0 +1,80 @@
+EB05MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                   X
+               STORAGE=AUTO,CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+EB05MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+*----------------------------------------------------------------*
+* TITLE
+*----------------------------------------------------------------*
+TITLE   DFHMDF POS=(2,25),LENGTH=30,ATTRB=(PROT),                      X
+               INITIAL='CUSTOMER UPDATE SCREEN'
+
+*----------------------------------------------------------------*
+* INPUT FIELD - CUSTOMER ID
+*----------------------------------------------------------------*
+CID-L   DFHMDF POS=(5,10),LENGTH=20,ATTRB=(PROT),                      X
+               INITIAL='ENTER CUSTOMER ID :'
+CID     DFHMDF POS=(5,35),LENGTH=12,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* OUTPUT FIELDS - EXISTING VALUES
+*----------------------------------------------------------------*
+FN-OLDL DFHMDF POS=(7,10),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='FIRST NAME  :'
+FN-OLD  DFHMDF POS=(7,30),LENGTH=15,ATTRB=(PROT)
+
+LN-OLDL DFHMDF POS=(8,10),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='LAST NAME   :'
+LN-OLD  DFHMDF POS=(8,30),LENGTH=15,ATTRB=(PROT)
+
+AREA-OLDL DFHMDF POS=(9,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='AREA CODE   :'
+AREA-OLD DFHMDF POS=(9,30),LENGTH=10,ATTRB=(PROT)
+
+ADDR-OLDL DFHMDF POS=(10,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='ADDRESS     :'
+ADDR-OLD DFHMDF POS=(10,30),LENGTH=30,ATTRB=(PROT)
+
+CITY-OLDL DFHMDF POS=(11,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='CITY        :'
+CITY-OLD DFHMDF POS=(11,30),LENGTH=15,ATTRB=(PROT)
+
+UNIT-OLDL DFHMDF POS=(12,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='UNITS       :'
+UNIT-OLD DFHMDF POS=(12,30),LENGTH=6,ATTRB=(PROT)
+
+*----------------------------------------------------------------*
+* INPUT FIELDS - NEW VALUES
+*----------------------------------------------------------------*
+FN-NEWL  DFHMDF POS=(7,50),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='NEW VALUE:'
+FN-NEW   DFHMDF POS=(7,65),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+LN-NEWL  DFHMDF POS=(8,50),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='NEW VALUE:'
+LN-NEW   DFHMDF POS=(8,65),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+AREA-NEWL DFHMDF POS=(9,50),LENGTH=15,ATTRB=(PROT),                      X
+               INITIAL='NEW VALUE:'
+AREA-NEW DFHMDF POS=(9,65),LENGTH=10,ATTRB=(UNPROT,FSET)
+
+ADDR-NEWL DFHMDF POS=(10,50),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='NEW VALUE:'
+ADDR-NEW DFHMDF POS=(10,65),LENGTH=30,ATTRB=(UNPROT,FSET)
+
+CITY-NEWL DFHMDF POS=(11,50),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='NEW VALUE:'
+CITY-NEW DFHMDF POS=(11,65),LENGTH=15,ATTRB=(UNPROT,FSET)
+
+*----------------------------------------------------------------*
+* MESSAGE FIELD
+*----------------------------------------------------------------*
+MSG-L   DFHMDF POS=(15,10),LENGTH=15,ATTRB=(PROT),                     X
+               INITIAL='MESSAGE     :'
+MSGTXT  DFHMDF POS=(15,30),LENGTH=45,ATTRB=(PROT)
+
+        DFHMDF POS=(18,10),LENGTH=25,ATTRB=(PROT),                     X
+               INITIAL='PF3->EXIT | PF6->CLR SCR '
+        DFHMSD TYPE=FINAL
+       END
+

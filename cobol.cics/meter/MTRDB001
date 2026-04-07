@@ -1,0 +1,236 @@
+IDENTIFICATION DIVISION.
+       PROGRAM-ID. MTRDB001.
+
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT TI01-METER-FILE  ASSIGN TO METERIN
+           ORGANIZATION           IS SEQUENTIAL
+           ACCESS MODE            IS SEQUENTIAL
+           FILE STATUS            IS WS-METER-STATUS.
+
+           SELECT TO01-METER-ERR   ASSIGN TO METERERR
+           ORGANIZATION           IS SEQUENTIAL
+           ACCESS MODE            IS SEQUENTIAL
+           FILE STATUS            IS WS-ERR-STATUS.
+
+       DATA DIVISION.
+
+       FILE SECTION.
+
+       FD TI01-METER-FILE
+           RECORDING MODE          IS F
+           RECORD CONTAINS         12  CHARACTERS.
+
+       01 TI01-METER-RECORD.
+          05 IN-CUST-ID      PIC X(12).
+          05 IN-CURR-READ    PIC X(6).
+
+       FD TO01-METER-ERR
+           RECORDING MODE          IS F
+           RECORD CONTAINS         18 CHARACTERS.
+
+       01 TO01-METER-ERR-RECORD.
+          05 ERR-CUST-ID      PIC X(12).
+          05 ERR-CURR-READ    PIC X(6).
+
+       WORKING-STORAGE SECTION.
+
+       EXEC SQL INCLUDE SQLCA END-EXEC.
+
+       01 WS-FILE-STATUS-CODES.
+          05 WS-METER-STATUS       PIC X(02).
+             88 METER-IO-STATUS    VALUE '00'.
+             88 METER-EOF          VALUE '10'.
+          05 WS-ERR-STATUS         PIC X(02).
+             88 ERR-IO-STATUS      VALUE '00'.
+
+       01 WS-DATE-VARIABLES.
+          05 WS-DATE               PIC 9(08).
+          05 WS-DATE-ID REDEFINES WS-DATE.
+             10 WS-CC              PIC 99.
+             10 WS-YY              PIC 99.
+             10 WS-MM              PIC 99.
+             10 WS-DD              PIC 99.
+
+       01 WS-METER-ID-GEN.
+          05 WS-MTR-PREFIX         PIC X(4) VALUE 'MTR-'.
+          05 WS-MTR-YEAR           PIC 9(4).
+          05 WS-MTR-CUST-PART      PIC X(4).
+          05 WS-METER-ID           PIC X(12).
+
+       01 WS-METER-REC.
+          05 WS-CUSTID            PIC X(12).
+          05 WS-METERID           PIC X(12).
+          05 WS-PREVREAD          PIC 9(6).
+          05 WS-CURRREAD          PIC 9(6).
+
+       01 WS-COUNTERS.
+          05 WS-READ-CTR           PIC 9(04) VALUE ZEROS.
+          05 WS-INSERT-CTR         PIC 9(04) VALUE ZEROS.
+          05 WS-ERROR-CTR          PIC 9(04) VALUE ZEROS.
+          05 WS-UPDATE-CTR         PIC 9(04) VALUE ZEROS.
+
+       PROCEDURE DIVISION.
+       0000-MAIN-LINE   SECTION.
+
+           PERFORM 1000-INITIALIZE.
+           PERFORM 2000-PROCESS.
+           PERFORM 9000-TERMINATE.
+
+       1000-INITIALIZE  SECTION.
+
+           DISPLAY '----------------------------------------'
+           DISPLAY 'MTRDB001 EXECUTION BEGINS HERE ..........'
+           DISPLAY '  METER DB2 BATCH PROGRAM               '
+           DISPLAY '----------------------------------------'
+
+           ACCEPT WS-DATE FROM DATE YYYYMMDD.
+           MOVE WS-YY TO WS-MTR-YEAR.
+
+           EXEC SQL
+              CONNECT TO POMSDB
+           END-EXEC
+
+           IF SQLCODE NOT = 0
+              DISPLAY 'DATABASE CONNECTION ERROR: ' SQLCODE
+              STOP RUN
+           END-IF.
+
+       2000-PROCESS     SECTION.
+
+           PERFORM 2100-OPEN-FILES.
+           PERFORM 2200-PROCESS-METER-FILE UNTIL METER-EOF.
+           PERFORM 2300-CLOSE-FILES.
+
+       2100-OPEN-FILES  SECTION.
+
+           OPEN INPUT TI01-METER-FILE.
+           IF NOT METER-IO-STATUS
+              DISPLAY 'ERROR OPENING METER INPUT FILE: ' WS-METER-STATUS
+              STOP RUN
+           END-IF.
+
+           OPEN OUTPUT TO01-METER-ERR.
+           IF NOT ERR-IO-STATUS
+              DISPLAY 'ERROR OPENING METER ERROR FILE: ' WS-ERR-STATUS
+              STOP RUN
+           END-IF.
+
+           DISPLAY 'FILES OPENED SUCCESSFULLY'.
+
+       2200-PROCESS-METER-FILE  SECTION.
+
+           READ TI01-METER-FILE
+                AT END  SET METER-EOF TO TRUE
+                DISPLAY 'NO MORE METER RECORDS TO PROCESS'
+
+                NOT AT END  ADD 1 TO WS-READ-CTR
+                            PERFORM 2210-PROCESS-METER-RECORD
+
+           END-READ.
+
+       2210-PROCESS-METER-RECORD SECTION.
+
+           IF IN-CUST-ID = SPACES OR IN-CURR-READ = SPACES
+              DISPLAY 'INVALID RECORD: CUST-ID=' IN-CUST-ID ' READ=' IN-CURR-READ
+              MOVE TI01-METER-RECORD TO TO01-METER-ERR-RECORD
+              WRITE TO01-METER-ERR-RECORD
+              ADD 1 TO WS-ERROR-CTR
+           ELSE
+              PERFORM 2220-UPDATE-METER-DATA
+           END-IF.
+
+       2220-UPDATE-METER-DATA SECTION.
+
+           MOVE IN-CUST-ID TO WS-CUSTID
+           MOVE IN-CURR-READ TO WS-CURRREAD
+
+           PERFORM 2230-GENERATE-METER-ID
+
+           EXEC SQL
+              SELECT PREV_READ, CURR_READ
+              INTO :WS-PREVREAD, :WS-CURRREAD
+              FROM POMS_METER
+              WHERE CUSTOMER_ID = :WS-CUSTID
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0
+                    PERFORM 2240-UPDATE-EXISTING-METER
+               WHEN 100
+                    PERFORM 2250-INSERT-NEW-METER
+               WHEN OTHER
+                    DISPLAY 'DATABASE ERROR: ' SQLCODE ' FOR CUST: ' WS-CUSTID
+                    ADD 1 TO WS-ERROR-CTR
+           END-EVALUATE.
+
+       2230-GENERATE-METER-ID SECTION.
+
+           STRING WS-MTR-PREFIX WS-MTR-YEAR '-' IN-CUST-ID(1:4)
+                  DELIMITED BY SIZE
+                  INTO WS-METER-ID.
+
+       2240-UPDATE-EXISTING-METER SECTION.
+
+           EXEC SQL
+              UPDATE POMS_METER
+              SET PREV_READ = CURR_READ,
+                  CURR_READ = :WS-CURRREAD
+              WHERE CUSTOMER_ID = :WS-CUSTID
+           END-EXEC
+
+           IF SQLCODE = 0
+              ADD 1 TO WS-UPDATE-CTR
+              DISPLAY 'UPDATED METER FOR CUST: ' WS-CUSTID
+           ELSE
+              DISPLAY 'UPDATE FAILED FOR CUST: ' WS-CUSTID ' SQLCODE: ' SQLCODE
+              ADD 1 TO WS-ERROR-CTR
+           END-IF.
+
+       2250-INSERT-NEW-METER SECTION.
+
+           MOVE 0 TO WS-PREVREAD
+
+           EXEC SQL
+              INSERT INTO POMS_METER 
+              (CUSTOMER_ID, METER_ID, PREV_READ, CURR_READ)
+              VALUES (:WS-CUSTID, :WS-METER-ID, :WS-PREVREAD, :WS-CURRREAD)
+           END-EXEC
+
+           IF SQLCODE = 0
+              ADD 1 TO WS-INSERT-CTR
+              DISPLAY 'INSERTED NEW METER FOR CUST: ' WS-CUSTID ' ID: ' WS-METER-ID
+           ELSE
+              DISPLAY 'INSERT FAILED FOR CUST: ' WS-CUSTID ' SQLCODE: ' SQLCODE
+              ADD 1 TO WS-ERROR-CTR
+           END-IF.
+
+       2300-CLOSE-FILES  SECTION.
+
+           CLOSE TI01-METER-FILE,
+                 TO01-METER-ERR.
+
+           EXEC SQL
+              COMMIT
+           END-EXEC
+
+           EXEC SQL
+              CONNECT RESET
+           END-EXEC
+
+           DISPLAY 'FILES CLOSED SUCCESSFULLY'.
+
+       9000-TERMINATE   SECTION.
+
+           DISPLAY '----------------------------------------'
+           DISPLAY ' INPUT RECORDS PROCESSED  ',  WS-READ-CTR
+           DISPLAY ' RECORDS INSERTED        ',  WS-INSERT-CTR
+           DISPLAY ' RECORDS UPDATED         ',  WS-UPDATE-CTR
+           DISPLAY ' ERRORS                   ',  WS-ERROR-CTR
+           DISPLAY '----------------------------------------'
+
+           DISPLAY 'MTRDB001 EXECUTION COMPLETED SUCCESSFULLY'
+           STOP RUN.

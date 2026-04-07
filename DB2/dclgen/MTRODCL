@@ -1,0 +1,53 @@
+      ******************************************************************
+      * DCLGEN TABLE(POMS_METER)                                       *
+      *        LIBRARY(OZA267.TRGA5.DCLGEN(MTRODCL))                   *
+      *        LANGUAGE(COBOL)                                         *
+      *        NAMES(MT-)                                              *
+      *        STRUCTURE(METER-RECORD)                                 *
+      *        QUOTE                                                   *
+      *        LABEL(YES)                                              *
+      *        COLSUFFIX(YES)                                          *
+      * ... IS THE DCLGEN COMMAND THAT MADE THE FOLLOWING STATEMENTS   *
+      ******************************************************************
+           EXEC SQL DECLARE POMS_METER TABLE
+           ( CUST_ID                        VARCHAR(12) NOT NULL,
+             MTR_ID                         VARCHAR(16) NOT NULL,
+             PREV_READ                      VARCHAR(6),
+             CURR_READ                      VARCHAR(6)
+           ) END-EXEC.
+      ******************************************************************
+      * COBOL DECLARATION FOR TABLE POMS_METER                         *
+      ******************************************************************
+       01  METER-RECORD.
+      *    *************************************************************
+           10 MT-CUST-ID.
+      *                       CUST_ID LENGTH
+              49 MT-CUST-ID-LEN    PIC S9(4) USAGE COMP.
+      *                       CUST_ID
+              49 MT-CUST-ID-TEXT   PIC X(12).
+      *    *************************************************************
+           10 MT-MTR-ID.
+      *                       MTR_ID LENGTH
+              49 MT-MTR-ID-LEN     PIC S9(4) USAGE COMP.
+      *                       MTR_ID
+              49 MT-MTR-ID-TEXT    PIC X(16).
+      *    *************************************************************
+           10 MT-PREV-READ.
+      *                       PREV_READ LENGTH
+              49 MT-PREV-READ-LEN
+                 PIC S9(4) USAGE COMP.
+      *                       PREV_READ
+              49 MT-PREV-READ-TEXT
+                 PIC X(6).
+      *    *************************************************************
+           10 MT-CURR-READ.
+      *                       CURR_READ LENGTH
+              49 MT-CURR-READ-LEN
+                 PIC S9(4) USAGE COMP.
+      *                       CURR_READ
+              49 MT-CURR-READ-TEXT
+                 PIC X(6).
+      ******************************************************************
+      * THE NUMBER OF COLUMNS DESCRIBED BY THIS DECLARATION IS 4       *
+      ******************************************************************
+

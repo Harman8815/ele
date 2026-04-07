@@ -1,0 +1,58 @@
+EB03MSD DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                    X
+               STORAGE=AUTO,CTRL=(FREEKB,FRSET),TIOAPFX=YES
+
+EB03MAP DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+
+*----------------------------------------------------------------*
+* TITLE
+*----------------------------------------------------------------*
+TITLE   DFHMDF POS=(2,25),LENGTH=30,ATTRB=PROT,                        X
+               INITIAL='CUSTOMER CREATE SCREEN'
+
+*----------------------------------------------------------------*
+* INPUT SECTION
+*----------------------------------------------------------------*
+TEXT1   DFHMDF POS=(5,10),LENGTH=30,ATTRB=PROT,                        X
+               INITIAL='ENTER CUSTOMER DETAILS:'
+
+        DFHMDF POS=(7,10),LENGTH=15,ATTRB=PROT,                        X
+               INITIAL='FIRST NAME  :'
+FNAME   DFHMDF POS=(7,30),LENGTH=15,ATTRB=(UNPROT,FSET)
+        DFHMDF POS=(7,46),LENGTH=01,ATTRB=PROT
+
+        DFHMDF POS=(8,10),LENGTH=15,ATTRB=PROT,                        X
+               INITIAL='LAST NAME   :'
+LNAME   DFHMDF POS=(8,30),LENGTH=15,ATTRB=(UNPROT,FSET)
+        DFHMDF POS=(8,46),LENGTH=01,ATTRB=PROT
+
+        DFHMDF POS=(9,10),LENGTH=15,ATTRB=PROT,                        X
+               INITIAL='AREA CODE   :'
+AREA    DFHMDF POS=(9,30),LENGTH=10,ATTRB=(UNPROT,FSET)
+        DFHMDF POS=(9,41),LENGTH=01,ATTRB=PROT
+
+        DFHMDF POS=(10,10),LENGTH=15,ATTRB=PROT,                       X
+               INITIAL='ADDRESS     :'
+ADDR    DFHMDF POS=(10,30),LENGTH=30,ATTRB=(UNPROT,FSET)
+        DFHMDF POS=(10,61),LENGTH=01,ATTRB=PROT
+
+        DFHMDF POS=(11,10),LENGTH=15,ATTRB=PROT,                       X
+               INITIAL='CITY        :'
+CITY    DFHMDF POS=(11,30),LENGTH=15,ATTRB=(UNPROT,FSET)
+        DFHMDF POS=(11,46),LENGTH=01,ATTRB=PROT
+
+*----------------------------------------------------------------*
+* OUTPUT FIELDS
+*----------------------------------------------------------------*
+        DFHMDF POS=(14,10),LENGTH=15,ATTRB=PROT,                       X
+               INITIAL='CUSTOMER ID :'
+CID     DFHMDF POS=(14,30),LENGTH=20,ATTRB=PROT
+        DFHMDF POS=(14,51),LENGTH=01,ATTRB=PROT
+
+        DFHMDF POS=(16,10),LENGTH=15,ATTRB=PROT,                       X
+               INITIAL='MESSAGE     :'
+MSGTXT  DFHMDF POS=(16,30),LENGTH=40,ATTRB=PROT
+        DFHMDF POS=(18,10),LENGTH=25,ATTRB=PROT,                       X
+               INITIAL='PF3->EXIT | PF6->CLR SCR '
+        DFHMSD TYPE=FINAL
+       END
+

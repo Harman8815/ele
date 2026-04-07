@@ -1,0 +1,123 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. EMNUO010.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+      *----------------------------------------------------------------*
+      * COPYBOOKS
+      *----------------------------------------------------------------*
+
+           COPY DFHBMSCA.
+           COPY DFHAID.
+           COPY EB01MSD.
+
+       01 WS-COMMAREA.
+          05 WS-CHOICE         PIC X(01).
+
+       01 WS-RESP-CODE         PIC S9(08) COMP.
+
+       01 WS-MSG               PIC X(40).
+      *----------------------------------------------------------------*
+       LINKAGE SECTION.
+
+       01 DFHCOMMAREA.
+          05 LK-COMM-DATA      PIC X(01).
+
+      *----------------------------------------------------------------*
+       PROCEDURE DIVISION.
+
+      *----------------------------------------------------------------*
+       1000-MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO EB01MAPO
+              MOVE -1 TO CHOICEL
+              PERFORM 3000-SEND-MAP
+           ELSE
+               MOVE DFHCOMMAREA   TO WS-COMMAREA
+               PERFORM 2000-RECEIVE-MAP
+           END-IF.
+           EXIT.
+
+       2000-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE
+                MAP('EB01MAP')
+                MAPSET('EB01MSD')
+                INTO(EB01MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+              PERFORM 2100-EVAL-USER-RESP
+           END-IF.
+           EXIT.
+
+       2100-EVAL-USER-RESP.
+
+           EVALUATE EIBAID
+               WHEN DFHENTER
+                    PERFORM 2200-PROCESS-OPT
+               WHEN DFHPF3
+                    PERFORM 9000-TERMINATE
+               WHEN DFHPF6
+                    MOVE LOW-VALUES TO EB01MAPO
+                    PERFORM 3000-SEND-MAP
+               WHEN OTHER
+                    MOVE 'INVALID KEY PRESSED ' TO MSGTXTO
+                    PERFORM 3000-SEND-MAP
+           END-EVALUATE.
+
+      *----------------------------------------------------------------*
+       2200-PROCESS-OPT.
+
+           MOVE CHOICEI           TO WS-CHOICE.
+           EVALUATE WS-CHOICE
+               WHEN '1'
+                   EXEC CICS XCTL PROGRAM('EMNUO020') END-EXEC
+                   PERFORM 3000-SEND-MAP
+               WHEN '2'
+                   MOVE 'PGM UNDER CONSTRUCTION ' TO MSGTXTO
+                   PERFORM 3000-SEND-MAP
+               WHEN '3'
+                   EXEC CICS RETURN END-EXEC
+               WHEN OTHER
+                    MOVE 'INVALID OPTION. PLEASE ENTER 1, 2 OR 3'
+                          TO MSGTXTO
+                   MOVE -1 TO CHOICEL
+                   PERFORM 3000-SEND-MAP
+           END-EVALUATE.
+
+       3000-SEND-MAP.
+
+           EXEC CICS SEND
+                MAP('EB01MAP')
+                MAPSET('EB01MSD')
+                FROM(EB01MAPO)
+                ERASE
+                CURSOR
+                RESP(WS-RESP-CODE)
+           END-EXEC
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+           EXEC CICS RETURN
+                TRANSID('EM01')
+                COMMAREA(WS-COMMAREA)
+           END-EXEC
+           END-IF.
+           EXIT.
+
+        9000-TERMINATE.
+
+            MOVE 'PRESS CTRL + BREAK TO EXIT' TO WS-MSG.
+            EXEC CICS SEND TEXT
+                           FROM(WS-MSG)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+            END-EXEC.
+            IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+               EXEC CICS RETURN END-EXEC
+            END-IF.
+

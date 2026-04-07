@@ -1,0 +1,34 @@
+* MAIN MENU COMPONENTS
+* --------------------------------
+* EB01MSD   → BMS MAP (Screen)
+* EB01MAIN  → COBOL CICS PROGRAM (Backend)
+* --------------------------------
+
+
+* CUSTOMER MENU STRUCTURE (FINAL)
+* --------------------------------
+* EB02MSD    → BMS MAP (Screen)
+* EB02CUSTM  → COBOL CICS PROGRAM (Backend)
+* --------------------------------
+
+
+* CUSTOMER CREATE STRUCTURE (FINAL)
+* --------------------------------
+* EB03MSD    → BMS MAP (Screen)
+* EB03CUSTC  → COBOL CICS PROGRAM (Backend)
+* --------------------------------
+
+
+* CUSTOMER READ STRUCTURE (FINAL)
+* --------------------------------
+* EB04MSD     → BMS MAP (Screen)
+* EB04CUSTR   → COBOL CICS PROGRAM (Backend)
+* --------------------------------
+
+
+* CUSTOMER UPDATE STRUCTURE (FINAL)
+* -----------------------------------
+* EB05MSD    → BMS MAP (contains MAP1 + MAP2)
+* EB05CUSTU  → COBOL CICS PROGRAM (Backend)
+* -----------------------------------
+

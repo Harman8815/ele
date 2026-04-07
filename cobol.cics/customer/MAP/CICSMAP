@@ -1,0 +1,18 @@
+//OZA266C3 JOB OZA,OZA,MSGLEVEL=(1,1),
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
+//  SET CICSMAP=EB03MSD
+//**********************************************************************
+//***     SAMPLE JCL TO COMPILE CICS MAP PROGRAM                     ***
+//***     KEEP USERID IN PLACE OF OZAGSB                             ***
+//***     DO NOT CHANGE LOADLIB=OZAADM.CICS.LOADLIB                  ***
+//***     MAPSET & PROGRAM NAME SHOULD BE SAME                       ***
+//**********************************************************************
+//JOBPROC  JCLLIB ORDER=OZA266.USER.PROCLIB
+//CICSMAP  EXEC PRCCCMAP,
+//         OUTC=*,
+//         COPYLIB=OZA266.ELE.CPYBK,     *CICS MAP COPYLIB
+//         LOADLIB=OZAADM.CICS.LOADLIB,
+//         MAPSET=EB03MSD                *NAME OF MAPSET
+//COPY.SYSUT1  DD  DSN=OZA266.ELE.SOURCE.CICS.NEW(&CICSMAP),DISP=SHR
+//
+

@@ -1,0 +1,30 @@
+MTRCRMSD DFHMSD TYPE=&SYSPARM,                                         X
+               LANG=COBOL,                                             X
+               MODE=INOUT,                                             X
+               TIOAPFX=YES,                                            X
+               STORAGE=AUTO
+METERCM  DFHMDI SIZE=(24,80)
+TITLE01  DFHMDF POS=(2,25),                                            X
+               LENGTH=30,                                              X
+               ATTRB=(PROT),                                           X
+               INITIAL='***METER CREATE***'
+CUSTIDL  DFHMDF POS=(5,10),                                            X
+               INITIAL='CUSTOMER ID:',                                 X
+               LENGTH=12,                                              X
+               ATTRB=(PROT)
+CUSTIDF  DFHMDF POS=(5,25),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(UNPROT,IC)
+METERIDL DFHMDF POS=(7,10),                                            X
+               INITIAL='METER ID:',                                    X
+               LENGTH=12,                                              X
+               ATTRB=(PROT)
+METERIDF DFHMDF POS=(7,25),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(PROT)
+MSGF     DFHMDF POS=(15,10),                                           X
+               LENGTH=50,                                              X
+               ATTRB=(PROT)
+
+         DFHMSD TYPE=FINAL
+               END

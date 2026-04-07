@@ -1,0 +1,73 @@
+      ******************************************************************
+      * DCLGEN TABLE(POMS_CUSTO)                                       *
+      *        LIBRARY(OZA267.TRGA5.DCLGEN(CUSTODCL))                  *
+      *        LANGUAGE(COBOL)                                         *
+      *        NAMES(CT-)                                              *
+      *        STRUCTURE(CUSTOMER-RECORD)                              *
+      *        QUOTE                                                   *
+      *        LABEL(YES)                                              *
+      *        COLSUFFIX(YES)                                          *
+      * ... IS THE DCLGEN COMMAND THAT MADE THE FOLLOWING STATEMENTS   *
+      ******************************************************************
+           EXEC SQL DECLARE POMS_CUSTO TABLE
+           ( CUSTOMER_ID                    CHAR(12) NOT NULL,
+             FIRST_NAME                     VARCHAR(10),
+             LAST_NAME                      VARCHAR(10),
+             AREA_CODE                      VARCHAR(6),
+             ADDRESS                        VARCHAR(30),
+             CITY                           VARCHAR(10),
+             UNITS                          VARCHAR(5)
+           ) END-EXEC.
+      ******************************************************************
+      * COBOL DECLARATION FOR TABLE POMS_CUSTO                         *
+      ******************************************************************
+       01  CUSTOMER-RECORD.
+      *    *************************************************************
+      *                       CUSTOMER_ID
+           10 CT-CUSTOMER-ID       PIC X(12).
+      *    *************************************************************
+           10 CT-FIRST-NAME.
+      *                       FIRST_NAME LENGTH
+              49 CT-FIRST-NAME-LEN
+                 PIC S9(4) USAGE COMP.
+      *                       FIRST_NAME
+              49 CT-FIRST-NAME-TEXT
+                 PIC X(10).
+      *    *************************************************************
+           10 CT-LAST-NAME.
+      *                       LAST_NAME LENGTH
+              49 CT-LAST-NAME-LEN
+                 PIC S9(4) USAGE COMP.
+      *                       LAST_NAME
+              49 CT-LAST-NAME-TEXT
+                 PIC X(10).
+      *    *************************************************************
+           10 CT-AREA-CODE.
+      *                       AREA_CODE LENGTH
+              49 CT-AREA-CODE-LEN
+                 PIC S9(4) USAGE COMP.
+      *                       AREA_CODE
+              49 CT-AREA-CODE-TEXT
+                 PIC X(6).
+      *    *************************************************************
+           10 CT-ADDRESS.
+      *                       ADDRESS LENGTH
+              49 CT-ADDRESS-LEN    PIC S9(4) USAGE COMP.
+      *                       ADDRESS
+              49 CT-ADDRESS-TEXT   PIC X(30).
+      *    *************************************************************
+           10 CT-CITY.
+      *                       CITY LENGTH
+              49 CT-CITY-LEN       PIC S9(4) USAGE COMP.
+      *                       CITY
+              49 CT-CITY-TEXT      PIC X(10).
+      *    *************************************************************
+           10 CT-UNITS.
+      *                       UNITS LENGTH
+              49 CT-UNITS-LEN      PIC S9(4) USAGE COMP.
+      *                       UNITS
+              49 CT-UNITS-TEXT     PIC X(5).
+      ******************************************************************
+      * THE NUMBER OF COLUMNS DESCRIBED BY THIS DECLARATION IS 7       *
+      ******************************************************************
+

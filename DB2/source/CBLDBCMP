@@ -1,0 +1,27 @@
+//OZA265PL JOB OZA,OZA,MSGLEVEL=(1,1),
+//             CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
+//   SET DB2PGM=MTR002
+//**********************************************************************
+//*** SAMPLE JCL TO PRECOMPILE AND LINK COBOL + DB2 BATCH PROGRAM    ***
+//***      KEEP USERID IN PLACE OF OZA265                            ***
+//*** COPYLIB ===> COPYBOOK                                          ***
+//*** DCLGLIB ===> DB2 DCLGEN LIBRARAY                               ***
+//*** DBRMLIB ===> DBRM LIBRARY                                      ***
+//*** LOADLIB ===> LOAD MODULE LIBRARY                               ***
+//*** MEM ===> DBRM MEMBER NAME                                      ***
+//*** LMOD ===> LOAD MODULE NAME                                     ***
+//*******\**************************************************************
+//JOBPROC  JCLLIB ORDER=OZA265.USER.PROCLIB
+//DB2ICOB  EXEC PRCDBCOB,
+//    COPYLIB='OZA265.CHARGE.TRGA5.CPYBK',
+//    DCLGLIB='OZA265.GRP2.ELE.DCLGEN',
+//    DBRMLIB='OZA265.TRGA5.DBRMLIB',
+//    LOADLIB='OZA265.TRGA5.DB2.LOADLIB',
+//    MEM=MTR002,
+//    LMOD=MTR002
+//SYSIN DD  DSN=OZA265.GRP2.ELE.DB2.SOURCE(&DB2PGM),DISP=SHR
+//LKED.SYSIN   DD *
+       INCLUDE SYSLIB(DSNELI)
+/*
+//
+

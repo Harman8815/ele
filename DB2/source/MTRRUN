@@ -1,0 +1,32 @@
+//OZA265EX JOB OZA,OZA,MSGLEVEL=(1,1),
+//             CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
+//**********************************************************************
+//***      SAMPLE JCL TO RUN COBOL + DB2 PROGRAM                     ***
+//***      KEEP USERID IN PLACE OF OZA265                            ***
+//***      PROGRAM AND PLAN NAME SHOULD BE SAME                      ***
+//***      LOADLIB ===> LOAD MODULE LIBRARY                          ***
+//*** NOTE: NEVER USE OZA265PL AS A PLAN NAME                        ***
+//**********************************************************************
+//RUNPGM   EXEC PGM=IKJEFT01
+//STEPLIB  DD DISP=SHR,DSN=DSNA10.DBAG.SDSNEXIT
+//         DD DISP=SHR,DSN=DSNA10.SDSNLOAD
+//         DD DISP=SHR,DSN=CEE.SCEERUN
+//METERIN  DD DSN=OZA265.GRP2.ELE.METER.PS,DISP=SHR
+//CUSTKSDS DD DSN=OZA265.GRP2.CUST.KSDS,DISP=SHR
+//METERERR DD SYSOUT=*
+//SYSTSPRT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSTSIN DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(MTR002) -
+  PLAN(OZA265A) -
+  LIBRARY('OZA265.TRGA5.DB2.LOADLIB')
+  END
+/*
+
+
+
+
+//
+

@@ -1,0 +1,47 @@
+//OZA265D  JOB NOTIFY=&SYSUID
+//STEP001  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DEFINE CLUSTER (NAME(OZA265.ELE.CUST.KSDS.FILE) -
+        INDEXED -
+        KEYS(12 0) -
+        RECORDSIZE(83 83) -
+        TRACKS(1 1) -
+        REUSE -
+        ) -
+        DATA (NAME(OZA265.ELE.CUST.KSDS.FILE.DATA) -
+        ) -
+        INDEX (NAME(OZA265.ELE.CUST.KSDS.FILE.INDEX) -
+        )
+/*
+//STEP002  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DEFINE CLUSTER (NAME(OZA265.ELE.METER.KSDS.FILE) -
+        INDEXED -
+        KEYS(12 14) -
+        RECORDSIZE(38 38) -
+        TRACKS(1 1) -
+        REUSE -
+        ) -
+        DATA (NAME(OZA265.ELE.METER.KSDS.FILE.DATA) -
+        ) -
+        INDEX (NAME(OZA265.ELE.METER.KSDS.FILE.INDEX) -
+        )
+/*
+//STEP003  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DEFINE CLUSTER (NAME(OZA265.ELE.BILL.KSDS.FILE) -
+        INDEXED -
+        KEYS(12 0) -
+        RECORDSIZE(104 104) -
+        TRACKS(1 1) -
+        REUSE -
+        ) -
+        DATA (NAME(OZA265.ELE.BILL.KSDS.FILE.DATA) -
+        ) -
+        INDEX (NAME(OZA265.ELE.BILL.KSDS.FILE.INDEX) -
+        )
+/*
+

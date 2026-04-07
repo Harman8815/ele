@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID.  CUST001.
+       PROGRAM-ID.  CUST004.
 
        ENVIRONMENT DIVISION.
        CONFIGURATION SECTION.
@@ -10,18 +10,10 @@
            ORGANIZATION           IS SEQUENTIAL
            ACCESS MODE            IS SEQUENTIAL
            FILE STATUS            IS WS-CUST-STATUS.
-
-           SELECT MO01-CUSTOMER-KSDS  ASSIGN TO CUSTKSDS
-           ORGANIZATION           IS INDEXED
-           ACCESS MODE            IS RANDOM
-           RECORD KEY             IS CUST-ID
-           FILE STATUS            IS WS-KSDS-STATUS.
-
            SELECT TO01-CUSTOMER-ERR   ASSIGN TO CUSTERR
            ORGANIZATION           IS SEQUENTIAL
            ACCESS MODE            IS SEQUENTIAL
            FILE STATUS            IS WS-ERR-STATUS.
-
        DATA DIVISION.
 
        FILE SECTION.
@@ -34,36 +26,14 @@
           05 IN-FIRST-NAME    PIC X(10).
           05 IN-LAST-NAME     PIC X(10).
           05 IN-AREA-CODE     PIC X(6).
-          05 IN-SPACE         PIC X.
-          05 IN-ADDRESS       PIC X(29).
+          05 IN-ADDRESS       PIC X(30).
           05 IN-CITY          PIC X(10).
           05 IN-UNITS         PIC X(5).
-
-       FD MO01-CUSTOMER-KSDS
-           RECORD CONTAINS         83  CHARACTERS.
-
-       01 MO01-CUSTOMER-RECORD.
-          05 CUST-ID          PIC X(12).
-          05 OUT-FIRST-NAME   PIC X(10).
-          05 OUT-LAST-NAME    PIC X(10).
-          05 OUT-AREA-CODE    PIC X(6).
-          05 OUT-SPACE        PIC X.
-          05 OUT-ADDRESS      PIC X(29).
-          05 OUT-CITY         PIC X(10).
-          05 OUT-UNITS        PIC X(5).
-
        FD TO01-CUSTOMER-ERR
            RECORDING MODE          IS F
-           RECORD CONTAINS         71 CHARACTERS.
+           RECORD CONTAINS         71  CHARACTERS.
 
-       01 TO01-CUSTOMER-ERR-RECORD.
-          05 ERR-FIRST-NAME   PIC X(10).
-          05 ERR-LAST-NAME    PIC X(10).
-          05 ERR-AREA-CODE    PIC X(6).
-          05 ERR-SPACE        PIC X.
-          05 ERR-ADDRESS      PIC X(29).
-          05 ERR-CITY         PIC X(10).
-          05 ERR-UNITS        PIC X(5).
+       01 TO01-CUSTOMER-ERR-RECORD    PIC X(71).
 
        WORKING-STORAGE SECTION.
 
@@ -72,19 +42,14 @@
              88 CUST-IO-STATUS    VALUE '00'.
              88 CUST-EOF          VALUE '10'.
              88 CUST-ROW-NOTFND   VALUE '23'.
-          05 WS-KSDS-STATUS        PIC X(02).
-             88 KSDS-IO-STATUS     VALUE '00'.
-             88 KSDS-ROW-NOTFND    VALUE '23'.
           05 WS-ERR-STATUS         PIC X(02).
              88 ERR-IO-STATUS      VALUE '00'.
 
-       01 WS-DATE-VARIABLES.
-          05 WS-DATE               PIC 9(08).
-          05 WS-DATE-ID REDEFINES WS-DATE.
-             10 WS-CC              PIC 99.
-             10 WS-YY              PIC 99.
-             10 WS-MM              PIC 99.
-             10 WS-DD              PIC 99.
+       01 WS-SQL-CODES.
+          05 WS-SQL-CODE               PIC S9(3) SIGN LEADING SEPARATE.
+            88 SQL-IO-STATUS           VALUE 000.
+            88 SQL-DUP-ROW             VALUE -803.
+            88 SQL-ERROR               VALUE -999 THRU 1.
 
        01  WS-RANDOM-NUMBER-GEN.
            05  WS-RAND-SEED        PIC S9(09) COMP-3 VALUE +0.
@@ -98,9 +63,8 @@
           05 WS-CUST-PREFIX        PIC X VALUE 'C'.
           05 WS-CUST-FN-CHARS      PIC X(2).
           05 WS-CUST-LN-CHARS      PIC X(2).
-          05 WS-CUST-RAND-3        PIC 9(3).
           05 WS-CUST-AREA-4        PIC 9(4).
-
+          05 WS-CUST-RAND-3        PIC 9(3).
        01 WS-ERROR-FLAGS.
           05 WS-ERROR-RECORD-FLAG  PIC 9.
              88 VALID-RECORD-FLAG  VALUE 1.
@@ -112,9 +76,27 @@
           05 WS-ERROR-CTR          PIC 9(04) VALUE ZEROS.
           05 WS-WRITE-CTR          PIC 9(04) VALUE ZEROS.
 
+       01 WS-DB2-VARIABLES.
+          05 DB2-SSID            PIC X(08) VALUE 'DBAG'.
+
+        01  CUSTOMER-IND-VARS.
+            10 CT-CUSTOMER-ID-IND   PIC S9(4) USAGE COMP.
+            10 CT-FIRST-NAME-IND   PIC S9(4) USAGE COMP.
+            10 CT-LAST-NAME-IND    PIC S9(4) USAGE COMP.
+            10 CT-AREA-CODE-IND    PIC S9(4) USAGE COMP.
+            10 CT-ADDRESS-IND      PIC S9(4) USAGE COMP.
+            10 CT-CITY-IND         PIC S9(4) USAGE COMP.
+            10 CT-UNITS-IND        PIC S9(4) USAGE COMP.
+
+           EXEC SQL
+               INCLUDE CUSTODCL
+           END-EXEC.
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC.
+
        PROCEDURE DIVISION.
        0000-MAIN-LINE   SECTION.
-
            PERFORM 1000-INITIALIZE.
 
            PERFORM 2000-PROCESS.
@@ -126,9 +108,7 @@
            DISPLAY '----------------------------------------'
            DISPLAY 'CUST001 EXECUTION BEGINS HERE ..........'
            DISPLAY '  CUSTOMER GENERATION PROGRAM            '
-           DISPLAY '----------------------------------------'
-
-           ACCEPT WS-DATE FROM DATE YYYYMMDD.
+           DISPLAY '----------------------------------------'.
 
        2000-PROCESS     SECTION.
 
@@ -146,16 +126,6 @@
               DISPLAY '----------------------------------------'
               STOP RUN
            END-IF.
-
-           OPEN OUTPUT MO01-CUSTOMER-KSDS
-           IF NOT KSDS-IO-STATUS
-              DISPLAY '----------------------------------------'
-              DISPLAY 'ERROR OPENING CUSTOMER MASTER KSDS      '
-              DISPLAY 'FILE  STATUS ', ' ',    WS-KSDS-STATUS
-              DISPLAY '----------------------------------------'
-              STOP RUN
-           END-IF.
-
            OPEN OUTPUT TO01-CUSTOMER-ERR
            IF NOT ERR-IO-STATUS
               DISPLAY '----------------------------------------'
@@ -167,11 +137,9 @@
 
            DISPLAY '----------------------------------------'
            DISPLAY 'CUSTOMER INPUT FILE OPENED ..............'
-           DISPLAY 'CUSTOMER MASTER KSDS IS OPENED ..........'
            DISPLAY 'CUSTOMER ERROR FILE IS OPENED ..........'
            DISPLAY '----------------------------------------'
            .
-
        2200-READ-CUSTOMER-FILE  SECTION.
 
            READ TI01-CUSTOMER-FILE
@@ -185,33 +153,24 @@
                             PERFORM 2300-VALIDATE-CUSTOMER
 
            END-READ.
-
        2300-VALIDATE-CUSTOMER SECTION.
 
            SET VALID-RECORD-FLAG       TO TRUE.
-
            IF IN-FIRST-NAME IS EQUAL TO SPACES OR
               IN-LAST-NAME IS EQUAL TO SPACES
               DISPLAY 'CUSTOMER NAME ERROR - FIRST/LAST NAME REQUIRED'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-CUSTOMER-RECORD     TO TO01-CUSTOMER-ERR-RECORD
               WRITE TO01-CUSTOMER-ERR-RECORD
+              ADD 1 TO WS-ERROR-CTR
            END-IF.
 
            IF VALID-RECORD-FLAG
-              PERFORM 2400-WRITE-CUSTOMER-KSDS
+              PERFORM 2400-INS-CUSTOMER-DB2
            END-IF.
+       2400-INS-CUSTOMER-DB2 SECTION.
 
-       2400-WRITE-CUSTOMER-KSDS SECTION.
-
-           MOVE IN-FIRST-NAME        TO OUT-FIRST-NAME.
-           MOVE IN-LAST-NAME         TO OUT-LAST-NAME.
-           MOVE IN-AREA-CODE         TO OUT-AREA-CODE.
-           MOVE IN-SPACE             TO OUT-SPACE.
-           MOVE IN-ADDRESS           TO OUT-ADDRESS.
-           MOVE IN-CITY              TO OUT-CITY.
-           MOVE IN-UNITS             TO OUT-UNITS.
-
+      *     GENERATE CUSTOMER ID
            MOVE IN-FIRST-NAME(1:2)   TO WS-CUST-FN-CHARS.
            MOVE IN-LAST-NAME(1:2)    TO WS-CUST-LN-CHARS.
            MOVE IN-AREA-CODE(1:4)    TO WS-CUST-AREA-4.
@@ -221,45 +180,84 @@
            STRING WS-CUST-PREFIX WS-CUST-FN-CHARS WS-CUST-LN-CHARS
                   WS-CUST-AREA-4 WS-CUST-RAND-3
                   DELIMITED BY SIZE
-                  INTO CUST-ID
+                  INTO CT-CUSTOMER-ID
            END-STRING.
+      *     MOVE DATA TO VARCHAR TEXT FIELDS
+           MOVE IN-FIRST-NAME        TO CT-FIRST-NAME-TEXT.
+           MOVE IN-LAST-NAME         TO CT-LAST-NAME-TEXT.
+           MOVE IN-AREA-CODE         TO CT-AREA-CODE-TEXT.
+           MOVE IN-ADDRESS           TO CT-ADDRESS-TEXT.
+           MOVE IN-CITY              TO CT-CITY-TEXT.
+           MOVE IN-UNITS             TO CT-UNITS-TEXT.
 
-           STRING WS-CUST-PREFIX WS-CUST-FN-CHARS WS-CUST-LN-CHARS
-                  WS-CUST-AREA-4 WS-CUST-RAND-3
-                  DELIMITED BY SIZE
-                  INTO CUST-ID
-           END-STRING.
+      *     SET LENGTHS FOR VARCHAR FIELDS (DB2 WILL HANDLE THIS AUTOMAT
+           MOVE 10                   TO CT-FIRST-NAME-LEN.
+           MOVE 10                   TO CT-LAST-NAME-LEN.
+           MOVE 6                    TO CT-AREA-CODE-LEN.
+           MOVE 30                   TO CT-ADDRESS-LEN.
+           MOVE 10                   TO CT-CITY-LEN.
+           MOVE 5                    TO CT-UNITS-LEN.
+      *     SET INDICATORS TO NON-NULL VALUES
+           MOVE 0                    TO CT-CUSTOMER-ID-IND.
+           MOVE 0                    TO CT-FIRST-NAME-IND.
+           MOVE 0                    TO CT-LAST-NAME-IND.
+           MOVE 0                    TO CT-AREA-CODE-IND.
+           MOVE 0                    TO CT-ADDRESS-IND.
+           MOVE 0                    TO CT-CITY-IND.
+           MOVE 0                    TO CT-UNITS-IND.
 
-           DISPLAY 'ATTEMPTING CUSTOMER ID : ' CUST-ID.
-
-           WRITE MO01-CUSTOMER-RECORD
-               INVALID KEY
-                   IF WS-KSDS-STATUS = '22'
-                      DISPLAY 'DUPLICATE KEY DETECTED: ' CUST-ID
-                              ' - RETRYING...'
-                      ADD 1 TO WS-DUP-CTR
-                      ADD 1 TO WS-RETRY-CTR
-                   ELSE
-                      DISPLAY 'WRITE ERROR - STATUS: ' WS-KSDS-STATUS
-                   END-IF
-               NOT INVALID KEY
-                   MOVE '00' TO WS-KSDS-STATUS
-                   ADD 1 TO WS-WRITE-CTR
-           END-WRITE.
-
+           DISPLAY 'ATTEMPTING CUSTOMER ID : ' CT-CUSTOMER-ID
+           EXEC SQL  INSERT INTO POMS_CUSTO
+                     VALUES (:CT-CUSTOMER-ID,
+                             :CT-FIRST-NAME,
+                             :CT-LAST-NAME,
+                             :CT-AREA-CODE,
+                             :CT-ADDRESS,
+                             :CT-CITY,
+                             :CT-UNITS
+                             )
+           END-EXEC.
+           MOVE SQLCODE                TO WS-SQL-CODE.
+           EVALUATE TRUE
+               WHEN SQL-IO-STATUS
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'CUSTOMER INSERTED', ' ', CT-CUSTOMER-ID
+                    DISPLAY ' -------------------------------------'
+                    ADD 1  TO WS-WRITE-CTR
+               WHEN SQL-DUP-ROW
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'CUSTOMER EXISTS  ', ' ', CT-CUSTOMER-ID
+                    DISPLAY ' -------------------------------------'
+                    ADD 1  TO WS-DUP-CTR
+               WHEN OTHER
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'ERROR INSERT CUST',  ':', WS-SQL-CODE
+                    DISPLAY 'CUSTOMER ID: ', CT-CUSTOMER-ID
+                    DISPLAY ' -------------------------------------'
+                    CALL 'DSNTIAR' USING SQLCA
+                    ADD 1 TO WS-ERROR-CTR
+           END-EVALUATE.
        9000-TERMINATE   SECTION.
 
-           DISPLAY '----------------------------------------'
-           DISPLAY ' INPUT RECORDS PROCESSED  ',  WS-READ-CTR
-           DISPLAY ' OUTPUT RECORDS PROCESSED ',  WS-WRITE-CTR
-           DISPLAY '----------------------------------------'
-
            CLOSE  TI01-CUSTOMER-FILE,
-                  TO01-CUSTOMER-ERR,
-                  MO01-CUSTOMER-KSDS.
+                  TO01-CUSTOMER-ERR.
+
+           EXEC SQL
+               COMMIT
+           END-EXEC.
+
+           EXEC SQL
+               CONNECT RESET
+           END-EXEC.
+           DISPLAY '----------------------------------------'
+           DISPLAY ' PROCESSING SUMMARY '
+           DISPLAY '----------------------------------------'
+           DISPLAY ' TOTAL RECORDS READ    : ' WS-READ-CTR
+           DISPLAY ' TOTAL RECORDS INSERTED: ' WS-WRITE-CTR
+           DISPLAY ' DUPLICATE RECORDS      : ' WS-DUP-CTR
+           DISPLAY ' ERROR RECORDS         : ' WS-ERROR-CTR
            DISPLAY '----------------------------------------'
            DISPLAY 'CUSTOMER FILE        IS CLOSED          '
-           DISPLAY 'CUSTOMER MASTER KSDS IS CLOSED          '
            DISPLAY 'CUSTOMER ERROR FILE  IS CLOSED          '
            DISPLAY '----------------------------------------'
 

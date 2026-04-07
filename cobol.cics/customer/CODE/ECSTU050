@@ -1,0 +1,264 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ECSTU050.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+           COPY DFHBMSCA.
+           COPY DFHAID.
+           COPY EB05MSD.
+
+       01 WS-CICS-RESPONSE-CODES.
+          05 DFHRESP-NORMAL        PIC S9(08) COMP VALUE 0.
+          05 DFHRESP-NOTFND        PIC S9(08) COMP VALUE +13.
+          05 DFHRESP-LENGERR       PIC S9(08) COMP VALUE +16.
+          05 DFHRESP-IOERR         PIC S9(08) COMP VALUE +18.
+          05 DFHRESP-NOTOPEN       PIC S9(08) COMP VALUE +19.
+          05 DFHRESP-ENOTFND       PIC S9(08) COMP VALUE +20.
+          05 DFHRESP-ILLLOG        PIC S9(08) COMP VALUE +28.
+          05 DFHRESP-TERMERR       PIC S9(08) COMP VALUE +32.
+          05 DFHRESP-DUPKEY        PIC S9(08) COMP VALUE +33.
+          05 DFHRESP-DUPREC        PIC S9(08) COMP VALUE +34.
+
+       01 WS-COMMAREA.
+          05 WS-STAGE            PIC X VALUE '1'.
+
+       01 WS-RESP-CODE           PIC S9(08) COMP.
+       01 WS-RESP-DISPLAY-CODE  PIC 9(08) DISPLAY.
+       01 WS-MSG                 PIC X(40).
+
+       01 WS-CUST-ID             PIC X(12).
+
+       01 WS-CUST-REC.
+          05 CUST-ID             PIC X(12).
+          05 FIRST-NAME          PIC X(15).
+          05 LAST-NAME           PIC X(15).
+          05 AREA-CODE           PIC X(10).
+          05 ADDRESS             PIC X(30).
+          05 CITY                PIC X(15).
+          05 UNITS               PIC 9(05).
+
+       01 WS-NEW-DATA.
+          05 WS-NFN              PIC X(15).
+          05 WS-NLN              PIC X(15).
+          05 WS-NAR              PIC X(10).
+          05 WS-NAD              PIC X(20).
+          05 WS-NCT              PIC X(15).
+
+
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+          05 LK-COMM             PIC X.
+
+       PROCEDURE DIVISION.
+
+       1000-MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+               MOVE '1' TO WS-STAGE
+               PERFORM 2000-SEND-MAP
+           ELSE
+               MOVE DFHCOMMAREA(1:1) TO WS-STAGE
+
+               IF WS-STAGE = '1'
+                   PERFORM 3000-RECEIVE-MAP
+                   PERFORM 4000-READ-VSAM
+               ELSE
+                   PERFORM 3100-RECEIVE-MAP
+                   PERFORM 5000-PROCESS-UPDATE
+               END-IF
+           END-IF.
+
+       2000-SEND-MAP.
+
+           MOVE LOW-VALUES TO EB05MAPO
+           MOVE -1 TO CIDL
+
+           EXEC CICS SEND MAP('EB05MAP')
+                MAPSET('EB05MSD')
+                FROM(EB05MAPO)
+                RESP(WS-RESP-CODE)
+                ERASE CURSOR
+           END-EXEC
+
+           MOVE '1' TO WS-STAGE
+
+           EXEC CICS RETURN
+                TRANSID('EB05')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(1)
+           END-EXEC.
+
+       2100-SEND-MAP.
+
+           MOVE LOW-VALUES TO EB05MAPO
+
+           MOVE FIRST-NAME TO FN-OLD
+           MOVE LAST-NAME  TO LN-OLD
+           MOVE AREA-CODE  TO AREA-OLD
+           MOVE ADDRESS    TO ADDR-OLD
+           MOVE CITY       TO CITY-OLD
+           MOVE UNITS      TO UNIT-OLD
+
+           MOVE -1 TO FN-NEWL
+
+           EXEC CICS SEND MAP('EB05MAP')
+                MAPSET('EB05MSD')
+                FROM(EB05MAPO)
+                RESP(WS-RESP-CODE)
+                ERASE CURSOR
+           END-EXEC
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   CONTINUE
+               WHEN OTHER
+                   MOVE 'SEND MAP ERROR' TO MSGTXT
+           END-EVALUATE.
+           MOVE '2' TO WS-STAGE
+
+           EXEC CICS RETURN
+                TRANSID('EB05')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(1)
+           END-EXEC.
+
+       3000-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE MAP('EB05MAP')
+                MAPSET('EB05MSD')
+                INTO(EB05MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   CONTINUE
+               WHEN OTHER
+                   MOVE 'RECEIVE MAP ERROR' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+           END-EVALUATE.
+           MOVE CIDI TO WS-CUST-ID
+
+           IF WS-CUST-ID = SPACES
+               MOVE 'ENTER CUSTOMER ID' TO MSGTXT
+               PERFORM 2000-SEND-MAP
+           END-IF.
+
+       3100-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE MAP('EB05MAP')
+                MAPSET('EB05MSD')
+                INTO(EB05MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   CONTINUE
+               WHEN OTHER
+                   MOVE 'RECEIVE MAP ERROR' TO MSGTXT
+           END-EVALUATE.
+
+           MOVE FN-NEWI TO WS-NFN
+           MOVE LN-NEWI TO WS-NLN
+           MOVE AREA-NEWI TO WS-NAR
+           MOVE ADDR-NEWI TO WS-NAD
+           MOVE CITY-NEWI TO WS-NCT.
+
+       4000-READ-VSAM.
+
+           EXEC CICS READ
+                DATASET('CU01KSDS')
+                RIDFLD(WS-CUST-ID)
+                INTO(WS-CUST-REC)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   PERFORM 2100-SEND-MAP
+               WHEN DFHRESP-NOTFND
+                   MOVE 'CUSTOMER NOT FOUND' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+               WHEN DFHRESP-LENGERR
+                   MOVE 'RECORD LENGTH ERROR' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+               WHEN DFHRESP-IOERR
+                   MOVE 'I/O ERROR - TRY AGAIN' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+               WHEN DFHRESP-NOTOPEN
+                   MOVE 'DATASET NOT OPEN' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+               WHEN OTHER
+                   MOVE 'ERROR READING RECORD' TO MSGTXT
+                   PERFORM 2000-SEND-MAP
+           END-EVALUATE.
+
+       5000-PROCESS-UPDATE.
+
+           IF WS-NFN NOT = SPACES
+               MOVE WS-NFN TO FIRST-NAME
+           END-IF
+
+           IF WS-NLN NOT = SPACES
+               MOVE WS-NLN TO LAST-NAME
+           END-IF
+
+           IF WS-NAR NOT = SPACES
+               MOVE WS-NAR TO AREA-CODE
+           END-IF
+
+           IF WS-NAD NOT = SPACES
+               MOVE WS-NAD TO ADDRESS
+           END-IF
+
+           IF WS-NCT NOT = SPACES
+               MOVE WS-NCT TO CITY
+           END-IF
+
+           PERFORM 6000-REWRITE-VSAM.
+
+       6000-REWRITE-VSAM.
+
+           EXEC CICS REWRITE
+                DATASET('CU01KSDS')
+                FROM(WS-CUST-REC)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   MOVE 'RECORD UPDATED SUCCESSFULLY' TO MSGTXT
+               WHEN DFHRESP-NOTFND
+                   MOVE 'RECORD NOT FOUND FOR UPDATE' TO MSGTXT
+               WHEN DFHRESP-LENGERR
+                   MOVE 'RECORD LENGTH ERROR' TO MSGTXT
+               WHEN DFHRESP-IOERR
+                   MOVE 'I/O ERROR - TRY AGAIN' TO MSGTXT
+               WHEN DFHRESP-DUPKEY
+                   MOVE 'DUPLICATE KEY ERROR' TO MSGTXT
+               WHEN DFHRESP-DUPREC
+                   MOVE 'DUPLICATE RECORD ERROR' TO MSGTXT
+               WHEN OTHER
+                   MOVE 'ERROR UPDATING RECORD' TO MSGTXT
+           END-EVALUATE
+           PERFORM 2100-SEND-MAP.
+
+       9000-TERMINATE.
+           MOVE 'PRESS CTRL + BREAK TO EXIT' TO WS-MSG.
+           EXEC CICS SEND TEXT
+                           FROM(WS-MSG)
+                           LENGTH(LENGTH OF WS-MSG)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+           END-EXEC.
+           EVALUATE WS-RESP-CODE
+               WHEN DFHRESP-NORMAL
+                   EXEC CICS RETURN END-EXEC
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'SEND TEXT ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO WS-MSG
+                   EXEC CICS RETURN END-EXEC
+           END-EVALUATE.
+
+

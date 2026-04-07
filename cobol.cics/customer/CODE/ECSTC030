@@ -1,0 +1,296 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ECSTC030.
+
+       ENVIRONMENT DIVISION.
+
+       DATA DIVISION.
+
+      *----------------------------------------------------------------*
+       WORKING-STORAGE SECTION.
+
+           COPY DFHBMSCA.
+           COPY DFHAID.
+           COPY EB03MSD.
+
+       01 WS-COMMAREA.
+          05 WS-FIRST-NAME         PIC X(10).
+          05 WS-LAST-NAME          PIC X(10).
+          05 WS-AREA-CODE          PIC X(6).
+          05 WS-SPACE             PIC X.
+          05 WS-ADDRESS         PIC X(29).
+          05 WS-CITY               PIC X(10).
+
+       77 WS-RESP-CODE             PIC S9(08) COMP.
+       77 WS-RESP-DISPLAY-CODE    PIC 9(08) DISPLAY.
+
+       77 ERROR-FLAG              PIC 9(01) VALUE 0.
+
+      *----------------------------------------------------------------*
+      * ID GENERATION VARIABLES
+      *----------------------------------------------------------------*
+       01 WS-ID-GEN.
+          05 WS-CUST-PREFIX        PIC X VALUE 'C'.
+          05 WS-CUST-FN-CHARS      PIC X(2).
+          05 WS-CUST-LN-CHARS      PIC X(2).
+          05 WS-CUST-AREA-4        PIC X(4).
+          05 WS-CUST-RAND-3        PIC 9(3).
+          05 WS-RAND-SEED          PIC S9(09) COMP-3 VALUE +0.
+          05 WS-RETRY-CTR          PIC 9(02) VALUE 0.
+          05 WS-CURRENT-TIME       PIC 9(08).
+      *----------------------------------------------------------------*
+      * VSAM RECORD STRUCTURE
+      *----------------------------------------------------------------*
+       01 WS-WORK-AREA.
+          05 CUST-ID               PIC X(12).
+          05 FIRST-NAME            PIC X(10).
+          05 LAST-NAME             PIC X(10).
+          05 AREA-CODE             PIC X(6).
+          05 OUT-SPACE             PIC X.
+          05 ADDRESS-1         PIC X(29).
+          05 CITY                  PIC X(10).
+          05 UNITS                 PIC X(5).
+
+       77 WS-CUST-ID               PIC X(12).
+
+      *----------------------------------------------------------------*
+      * COPYBOOKS
+      *----------------------------------------------------------------*
+       LINKAGE SECTION.
+
+       01 DFHCOMMAREA.
+          05 LS-FIRST-NAME         PIC X(10).
+          05 LS-LAST-NAME          PIC X(10).
+          05 LS-SPACE             PIC X.
+          05 LS-AREA-CODE          PIC X(6).
+          05 LS-ADDRESS            PIC X(29).
+          05 LS-CITY               PIC X(10).
+
+       PROCEDURE DIVISION.
+       1000-MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO EB03MAPO
+              MOVE -1 TO FNAMEL
+              MOVE SPACES TO MSGTXTO
+              PERFORM 3000-SEND-MAP
+           END-IF.
+           IF EIBCALEN > 0
+               MOVE DFHCOMMAREA TO WS-COMMAREA
+               PERFORM 2000-RECEIVE-MAP
+           END-IF.
+           EXIT.
+
+       2000-RECEIVE-MAP.
+
+           EXEC CICS RECEIVE
+                MAP('EB03MAP')
+                MAPSET('EB03MSD')
+                INTO(EB03MAPI)
+                RESP(WS-RESP-CODE)
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+              PERFORM 2100-EVAL-USER-RESP
+           END-IF.
+           EXIT.
+
+       2100-EVAL-USER-RESP.
+
+           EVALUATE EIBAID
+               WHEN DFHENTER
+                    PERFORM 2200-PROCESS-INPUT
+               WHEN DFHPF3
+                    PERFORM 9000-TERMINATE
+               WHEN DFHPF6
+                    MOVE LOW-VALUES TO EB03MAPO
+                    PERFORM 3000-SEND-MAP
+               WHEN OTHER
+                    MOVE 'INVALID KEY PRESSED' TO MSGTXTO
+                    PERFORM 3000-SEND-MAP
+           END-EVALUATE.
+           EXIT.
+
+       2200-PROCESS-INPUT.
+
+      *----------------------------------------------------------------*
+      * MOVE INPUT FROM MAP
+      *----------------------------------------------------------------*
+           MOVE FNAMEI TO WS-FIRST-NAME.
+           MOVE LNAMEI TO WS-LAST-NAME.
+           MOVE AREAI  TO WS-AREA-CODE.
+           MOVE ADDRI  TO WS-ADDRESS.
+           MOVE CITYI  TO WS-CITY.
+
+      *----------------------------------------------------------------*
+      * VALIDATION
+      *----------------------------------------------------------------*
+           MOVE SPACES TO MSGTXTO.
+           MOVE 0 TO ERROR-FLAG.
+
+           IF WS-FIRST-NAME IS EQUAL TO LOW-VALUES OR
+              WS-FIRST-NAME IS EQUAL TO SPACES
+              MOVE 'FIRST NAME IS REQUIRED'    TO MSGTXTO
+              MOVE -1                TO FNAMEL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-LAST-NAME IS EQUAL TO LOW-VALUES OR
+              WS-LAST-NAME IS EQUAL TO SPACES
+              MOVE 'LAST NAME IS REQUIRED'     TO MSGTXTO
+              MOVE -1                TO LNAMEL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-AREA-CODE IS EQUAL TO LOW-VALUES OR
+              WS-AREA-CODE IS EQUAL TO SPACES
+              MOVE 'AREA CODE IS REQUIRED'      TO MSGTXTO
+              MOVE -1                TO AREAL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+           IF WS-ADDRESS IS EQUAL TO LOW-VALUES OR
+              WS-ADDRESS IS EQUAL TO SPACES
+              MOVE 'ADDRESS IS REQUIRED'        TO MSGTXTO
+              MOVE -1                TO ADDRL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF WS-CITY IS EQUAL TO LOW-VALUES OR
+              WS-CITY IS EQUAL TO SPACES
+              MOVE 'CITY IS REQUIRED'           TO MSGTXTO
+              MOVE -1                TO CITYL
+              MOVE 1 TO ERROR-FLAG
+           END-IF.
+
+           IF ERROR-FLAG = 1
+              PERFORM 3000-SEND-MAP
+           ELSE
+               PERFORM 2300-GENERATE-ID
+           END-IF.
+
+           EXIT.
+
+      *----------------------------------------------------------------*
+       2300-GENERATE-ID.
+      *----------------------------------------------------------------*
+      * TAKE FIRST 2 LETTERS AND AREA CODE
+      *----------------------------------------------------------------*
+           MOVE WS-FIRST-NAME(1:2)   TO WS-CUST-FN-CHARS.
+           MOVE WS-LAST-NAME(1:2)    TO WS-CUST-LN-CHARS.
+           MOVE WS-AREA-CODE(1:4)    TO WS-CUST-AREA-4.
+
+      *----------------------------------------------------------------*
+      * GENERATE RANDOM 3 DIGIT NUMBER
+      *----------------------------------------------------------------*
+           ACCEPT WS-CURRENT-TIME FROM TIME
+           COMPUTE WS-RAND-SEED =
+                              FUNCTION RANDOM(WS-CURRENT-TIME) * 1000.
+           COMPUTE WS-CUST-RAND-3 = FUNCTION MOD(WS-RAND-SEED, 1000).
+      *----------------------------------------------------------------*
+      * BUILD CUSTOMER ID
+      *----------------------------------------------------------------*
+           STRING WS-CUST-PREFIX WS-CUST-FN-CHARS WS-CUST-LN-CHARS
+                  WS-CUST-AREA-4 WS-CUST-RAND-3
+                  DELIMITED BY SIZE
+                  INTO WS-CUST-ID.
+           PERFORM 2400-WRITE-VSAM.
+
+           EXIT.
+
+       2400-WRITE-VSAM.
+
+      *----------------------------------------------------------------*
+      * PREPARE RECORD
+      *----------------------------------------------------------------*
+           MOVE WS-CUST-ID    TO CUST-ID
+           MOVE WS-FIRST-NAME TO FIRST-NAME
+           MOVE WS-LAST-NAME  TO LAST-NAME
+           MOVE WS-AREA-CODE  TO AREA-CODE
+           MOVE WS-ADDRESS    TO ADDRESS-1
+           MOVE WS-CITY       TO CITY
+           MOVE ZEROS         TO UNITS
+
+      *----------------------------------------------------------------*
+      * WRITE TO KSDS
+      *----------------------------------------------------------------*
+           EXEC CICS WRITE
+                FILE('CU01KSDS')
+                FROM(WS-WORK-AREA)
+                RIDFLD(CUST-ID)
+                RESP(WS-RESP-CODE)
+           END-EXEC
+      *----------------------------------------------------------------*
+      * HANDLE RESPONSE
+      *----------------------------------------------------------------*
+           EVALUATE WS-RESP-CODE
+
+               WHEN DFHRESP(NORMAL)
+                   MOVE WS-CUST-ID TO CIDO
+                   MOVE 'CUSTOMER ID IS GENERATED'
+                        TO MSGTXTO
+                   PERFORM 3000-SEND-MAP
+               WHEN DFHRESP(DUPREC)
+                   ADD 1 TO WS-RETRY-CTR
+                   MOVE 'DUPLICATE KEY DETECTED - RETRYING'
+                        TO MSGTXTO
+                   IF WS-RETRY-CTR < 10
+                       PERFORM 2300-GENERATE-ID
+                       PERFORM 2400-WRITE-VSAM
+                   ELSE
+                       MOVE 'MAX RETRIES REACHED - CONTACT ADMIN'
+                            TO MSGTXTO
+                       MOVE 0 TO WS-RETRY-CTR
+                   END-IF
+               WHEN DFHRESP(NOTFND)
+                   MOVE 'DATASET NOT FOUND - CHECK CUSTKSDS'
+                        TO MSGTXTO
+               WHEN DFHRESP(DUPKEY)
+                   MOVE 'DUPLICATE KEY ERROR - TRY AGAIN'
+                        TO MSGTXTO
+               WHEN DFHRESP(LENGERR)
+                   MOVE 'RECORD TOO LONG - CHECK DATA LENGTH'
+                        TO MSGTXTO
+               WHEN DFHRESP(NOSPACE)
+                   MOVE 'NO SPACE IN DATASET - CONTACT ADMIN'
+                        TO MSGTXTO
+               WHEN DFHRESP(IOERR)
+                   MOVE 'I/O ERROR - TRY AGAIN LATER'
+                        TO MSGTXTO
+               WHEN OTHER
+                   MOVE WS-RESP-CODE TO WS-RESP-DISPLAY-CODE
+                   STRING 'VSAM ERROR - CODE: ' DELIMITED BY SIZE
+                           WS-RESP-DISPLAY-CODE DELIMITED BY SIZE
+                          INTO MSGTXTO
+               END-EVALUATE
+
+           PERFORM 3000-SEND-MAP.
+
+       3000-SEND-MAP.
+
+           EXEC CICS SEND
+                MAP('EB03MAP')
+                MAPSET('EB03MSD')
+                FROM(EB03MAPO)
+                RESP(WS-RESP-CODE)
+                ERASE
+                CURSOR
+           END-EXEC
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+              EXEC CICS RETURN
+                   TRANSID('EB03')
+                   COMMAREA(WS-COMMAREA)
+                   LENGTH(LENGTH OF WS-COMMAREA)
+              END-EXEC
+            END-IF.
+           EXIT.
+
+       9000-TERMINATE.
+
+           MOVE 'PRESS CTRL + BREAK TO EXIT' TO MSGTXTO.
+           EXEC CICS SEND TEXT
+                           FROM(MSGTXTO)
+                           RESP(WS-RESP-CODE)
+                           ERASE
+           END-EXEC.
+           IF WS-RESP-CODE IS EQUAL TO DFHRESP(NORMAL)
+               EXEC CICS RETURN END-EXEC
+           END-IF.
+

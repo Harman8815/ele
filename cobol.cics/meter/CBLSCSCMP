@@ -1,0 +1,18 @@
+//OZA284CC JOB OZA,OZA,MSGLEVEL=(1,1),
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M
+//   SET CICSPGM=METMENU
+//**********************************************************************
+//***     SAMPLE JCL TO COMPILE COBOL + CICS PROGRAM                 ***
+//***     KEEP USERID IN PLACE OF OZAGSB                             ***
+//***     DO NOT CHANGE LOADLIB=OZAADM.CICS.LOADLIB                  ***
+//**********************************************************************
+//JOBPROC  JCLLIB ORDER=OZAGSB.USER.PROCLIB
+//CICSCOB  EXEC PRCCCSCB,
+//             COPYLIB=OZA284.TRGA5.CPYBK,
+//             LOADLIB=OZAADM.CICS.LOADLIB
+//TRN.SYSIN  DD DSN=OZA284.TRGA5.CICS.SOURCE(&CICSPGM),DISP=SHR
+//LKED.SYSIN DD  *
+  NAME METCRE(R)
+/*
+//
+

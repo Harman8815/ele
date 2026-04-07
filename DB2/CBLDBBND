@@ -1,0 +1,32 @@
+ //OZA267BR JOB OZA,OZA,MSGLEVEL=(1,1),                                  
+ //             CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=0M              
+ //**********************************************************************
+ //*** KEEP USERID IN PLACE OF OZA267                                 ***
+ //*** SAMPLE JCL TO BIND COBOL + DB2 BATCH PROGRAM                   ***
+ //*** DBRMLIB ===> DBRM LIBRARY                                      ***
+ //*** MEMBER ===> DBRM MEMBER NAME                                   ***
+ //*** PLAN   ===> PLAN NAME SAME AS MEMBER NAME                      ***
+ //*** NOTE: NEVER USE OZA267PL AS A PLAN NAME                        ***
+ //**********************************************************************
+ //JOBLIB   DD DISP=SHR,DSN=DSNA10.DBAG.SDSNEXIT                         
+ //         DD DISP=SHR,DSN=DSNA10.SDSNLOAD                              
+ //         DD DISP=SHR,DSN=CEE.SCEERUN                                  
+ //BINDPLAN EXEC PGM=IKJEFT01,DYNAMNBR=20                                
+ //DBRMLIB  DD DSN=OZA267.TRGA5.DBRMLIB,DISP=SHR   
+ //SYSTSPRT DD SYSOUT=*                                                  
+ //SYSPRINT DD SYSOUT=*                                                  
+ //SYSUDUMP DD SYSOUT=*                                                  
+ //SYSOUT   DD SYSOUT=*                                                  
+ //SYSTSIN DD *                                                          
+   DSN SYSTEM(DBAG)                                                      
+   BIND  MEMBER(CUST004)-                                                
+         PLAN(OZA267A)     -                                             
+         QUALIFIER(OZA267) -                                             
+         OWNER(OZA267)     -                                             
+         ACTION(REP)       -                                             
+         ISOLATION(CS)     -                                             
+         VALIDATE(BIND)    -                                             
+         RELEASE(COMMIT)   -                                             
+                                                                         
+   END                                                                   
+ //                                                                                            

@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID.  MTR001.
+       PROGRAM-ID.  MTR002.
 
        ENVIRONMENT DIVISION.
        CONFIGURATION SECTION.
@@ -10,18 +10,11 @@
            ORGANIZATION           IS SEQUENTIAL
            ACCESS MODE            IS SEQUENTIAL
            FILE STATUS            IS WS-METER-STATUS.
-
            SELECT MI01-CUSTOMER-KSDS  ASSIGN TO CUSTKSDS
            ORGANIZATION           IS INDEXED
            ACCESS MODE            IS SEQUENTIAL
            RECORD KEY             IS CUST-KEY
            FILE STATUS            IS WS-CUST-KSDS-STATUS.
-
-           SELECT MO01-METER-KSDS  ASSIGN TO MTRKSDS
-           ORGANIZATION           IS INDEXED
-           ACCESS MODE            IS RANDOM
-           RECORD KEY             IS MTR-CUST-ID
-           FILE STATUS            IS WS-KSDS-STATUS.
 
            SELECT TO01-METER-ERR   ASSIGN TO METERERR
            ORGANIZATION           IS SEQUENTIAL
@@ -31,7 +24,6 @@
        DATA DIVISION.
 
        FILE SECTION.
-
        FD TI01-METER-FILE
            RECORDING MODE          IS F
            RECORD CONTAINS         12  CHARACTERS.
@@ -47,19 +39,9 @@
           05 CUST-KEY         PIC X(12).
           05 CUST-FILLER      PIC X(71).
 
-       FD MO01-METER-KSDS
-           RECORD CONTAINS         38  CHARACTERS.
-
-       01 MO01-METER-RECORD.
-          05 MTR-ID           PIC X(14).
-          05 MTR-CUST-ID      PIC X(12).
-          05 MTR-PREV-READ    PIC 9(06).
-          05 MTR-CURR-READ    PIC 9(06).
-
        FD TO01-METER-ERR
            RECORDING MODE          IS F
            RECORD CONTAINS         12 CHARACTERS.
-
        01 TO01-METER-ERR-RECORD.
           05 ERR-PREV-READ    PIC X(6).
           05 ERR-CURR-READ    PIC X(6).
@@ -71,14 +53,17 @@
              88 METER-IO-STATUS    VALUE '00'.
              88 METER-EOF          VALUE '10'.
              88 METER-ROW-NOTFND   VALUE '23'.
-          05 WS-KSDS-STATUS        PIC X(02).
-             88 KSDS-IO-STATUS     VALUE '00'.
-             88 KSDS-ROW-NOTFND    VALUE '23'.
           05 WS-CUST-KSDS-STATUS    PIC X(02).
              88 CUST-KSDS-IO-STATUS  VALUE '00'.
              88 CUST-KSDS-EOF        VALUE '10'.
           05 WS-ERR-STATUS         PIC X(02).
              88 ERR-IO-STATUS      VALUE '00'.
+
+       01 WS-SQL-CODES.
+          05 WS-SQL-CODE               PIC S9(3) SIGN LEADING SEPARATE.
+            88 SQL-IO-STATUS           VALUE 000.
+            88 SQL-DUP-ROW             VALUE -803.
+            88 SQL-OTHER-ERROR         VALUE -999 THRU 999.
 
        01 WS-DATE-VARIABLES.
           05 WS-DATE               PIC 9(08).
@@ -87,7 +72,6 @@
              10 WS-YY              PIC 99.
              10 WS-MM              PIC 99.
              10 WS-DD              PIC 99.
-
        01  WS-RANDOM-NUMBER-GEN.
            05  WS-RAND-SEED        PIC S9(09) COMP-3 VALUE +0.
            05  WS-RAND-RESULT      PIC S9(09) COMP-3 VALUE +0.
@@ -96,18 +80,12 @@
            05  WS-ID-RAND          PIC X(04).
            05  WS-RETRY-CTR        PIC 9(02)         VALUE 0.
 
-       01 WS-CONSUMPTION-CALC.
-          05 WS-PREV-READING     PIC 9(08) VALUE 0.
-          05 WS-CURR-READING     PIC 9(08) VALUE 0.
-
        01 WS-METER-ID-GEN.
-          05 WS-MTR-PREFIX         PIC X(4) VALUE 'MTR-'.
+          05 WS-MTR-PREFIX         PIC X(3) VALUE 'MTR'.
           05 WS-MTR-CUST-CH1       PIC X.
           05 WS-MTR-CUST-CH2       PIC X.
-          05 WS-MTR-DD             PIC 99.
-          05 WS-MTR-MM             PIC 99.
+          05 WS-MTR-AREACODE       PIC X(3).
           05 WS-MTR-RAND           PIC 9999.
-
        01 WS-HARDCODED-CUST-ID    PIC X(12).
 
        01 WS-ERROR-FLAGS.
@@ -122,28 +100,37 @@
           05 WS-WRITE-CTR          PIC 9(04) VALUE ZEROS.
           05 WS-SKIP-CTR           PIC 9(04) VALUE ZEROS.
 
+       01 WS-DB2-VARIABLES.
+          05 DB2-SSID            PIC X(08) VALUE 'DBAG'.
+       01  METER-IND-VARS.
+           10 MT-CUST-ID-IND       PIC S9(4) USAGE COMP.
+           10 MT-MTR-ID-IND        PIC S9(4) USAGE COMP.
+           10 MT-PREV-READ-IND     PIC S9(4) USAGE COMP.
+           10 MT-CURR-READ-IND     PIC S9(4) USAGE COMP.
+
+
+
+           EXEC SQL INCLUDE MTRODCL    END-EXEC.
+           EXEC SQL INCLUDE SQLCA      END-EXEC.
+
        PROCEDURE DIVISION.
        0000-MAIN-LINE   SECTION.
 
            PERFORM 1000-INITIALIZE.
-
            PERFORM 2000-PROCESS.
-
            PERFORM 9000-TERMINATE.
 
        1000-INITIALIZE  SECTION.
 
            DISPLAY '----------------------------------------'
-           DISPLAY 'MTR002 EXECUTION BEGINS HERE ..........'
-           DISPLAY '  METER GENERATION PROGRAM               '
-           DISPLAY '----------------------------------------'
+           DISPLAY 'MTR002 EXECUTION BEGINS HERE            '
+           DISPLAY '  METER GENERATION PROGRAM              '
+           DISPLAY '----------------------------------------'.
 
-           ACCEPT WS-DATE FROM DATE YYYYMMDD.
 
-       2000-PROCESS     SECTION.
+       2000-PROCESS  SECTION.
 
            PERFORM 2100-OPEN-FILES.
-
            PERFORM 2200-READ-CUSTOMER-KSDS UNTIL CUST-KSDS-EOF.
 
        2100-OPEN-FILES  SECTION.
@@ -152,7 +139,7 @@
            IF NOT CUST-KSDS-IO-STATUS
               DISPLAY '----------------------------------------'
               DISPLAY 'ERROR OPENING CUSTOMER MASTER KSDS      '
-              DISPLAY 'FILE  STATUS ', ' ',    WS-CUST-KSDS-STATUS
+              DISPLAY 'FILE  STAT ', ' ',    WS-CUST-KSDS-STATUS
               DISPLAY '----------------------------------------'
               STOP RUN
            END-IF.
@@ -162,15 +149,6 @@
               DISPLAY '----------------------------------------'
               DISPLAY 'ERROR OPENING METER INPUT FILE       '
               DISPLAY 'FILE  STATUS ', ' ',    WS-METER-STATUS
-              DISPLAY '----------------------------------------'
-              STOP RUN
-           END-IF.
-
-           OPEN OUTPUT MO01-METER-KSDS
-           IF NOT KSDS-IO-STATUS
-              DISPLAY '----------------------------------------'
-              DISPLAY 'ERROR OPENING METER MASTER KSDS         '
-              DISPLAY 'FILE  STATUS ', ' ',    WS-KSDS-STATUS
               DISPLAY '----------------------------------------'
               STOP RUN
            END-IF.
@@ -187,11 +165,8 @@
            DISPLAY '----------------------------------------'
            DISPLAY 'CUSTOMER KSDS OPENED ..............'
            DISPLAY 'METER INPUT FILE OPENED ...........'
-           DISPLAY 'METER MASTER KSDS IS OPENED ..........'
            DISPLAY 'METER ERROR FILE IS OPENED ..........'
-           DISPLAY '----------------------------------------'
-           .
-
+           DISPLAY '----------------------------------------'.
        2200-READ-CUSTOMER-KSDS  SECTION.
 
            READ MI01-CUSTOMER-KSDS
@@ -209,7 +184,6 @@
        2205-READ-METER-DATA SECTION.
 
            READ TI01-METER-FILE
-
                 AT END  SET METER-EOF TO TRUE
                 DISPLAY '----------------------------------------'
                 DISPLAY 'NO MORE METER READINGS AVAILABLE --------'
@@ -224,61 +198,93 @@
            SET VALID-RECORD-FLAG       TO TRUE.
 
            IF IN-PREV-READ IS EQUAL TO SPACES
-              DISPLAY 'METER PREV READ ERROR - P_R FOR METER'           R METER'
+              DISPLAY 'METER PREV READ ERROR - PREV_READ REQUIRED'
+                      ' FOR METER'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
+              ADD 1 TO WS-ERROR-CTR
            END-IF.
 
            IF IN-CURR-READ IS EQUAL TO SPACES
-              DISPLAY 'METER CUR READ ERR - C_R  FOR METER'              METER'
+              DISPLAY 'METER CURR READ ERROR - CURR_READ REQUIRED'
+                      ' FOR METER'
               SET ERROR-RECORD-FLAG         TO TRUE
               MOVE TI01-METER-RECORD     TO TO01-METER-ERR-RECORD
               WRITE TO01-METER-ERR-RECORD
+              ADD 1 TO WS-ERROR-CTR
            END-IF.
-
            IF VALID-RECORD-FLAG
-              PERFORM 2400-WRITE-METER-KSDS
+              PERFORM 2400-INS-METER-DB2
            END-IF.
 
-       2400-WRITE-METER-KSDS SECTION.
-
+       2400-INS-METER-DB2 SECTION.
+           MOVE SPACES                 TO MT-MTR-ID
+      *     GENERATE METER ID: MTR-+CUST_INITIALS(2)+DDMM+RANDOM(4)
            MOVE CUST-KEY(2:1)          TO WS-MTR-CUST-CH1.
            MOVE CUST-KEY(3:1)          TO WS-MTR-CUST-CH2.
-           MOVE WS-DD                  TO WS-MTR-DD.
-           MOVE WS-MM                  TO WS-MTR-MM.
+           MOVE CUST-KEY(6:3)         TO WS-MTR-AREACODE.
            COMPUTE WS-MTR-RAND = FUNCTION RANDOM * 10000.
-
            STRING WS-MTR-PREFIX WS-MTR-CUST-CH1 WS-MTR-CUST-CH2
-                  WS-MTR-DD WS-MTR-MM WS-MTR-RAND
+                  WS-MTR-AREACODE WS-MTR-RAND
                   DELIMITED BY SIZE
-                  INTO MTR-ID
+                  INTO MT-MTR-ID
            END-STRING.
-           MOVE CUST-KEY                  TO MTR-CUST-ID.
+           DISPLAY MT-MTR-ID.
+      *     MOVE DATA TO VARCHAR TEXT FIELDS
+           MOVE CUST-KEY              TO MT-CUST-ID-TEXT.
+           MOVE IN-PREV-READ          TO MT-PREV-READ-TEXT.
+           MOVE IN-CURR-READ          TO MT-CURR-READ-TEXT.
+           DISPLAY MT-MTR-ID.
+      *     SET LENGTHS FOR VARCHAR FIELDS (DB2 WILL HANDLE THIS AUTOMAT
+           MOVE 12                    TO MT-CUST-ID-LEN.
+           MOVE 14                    TO MT-MTR-ID-LEN.
+           MOVE 6                     TO MT-PREV-READ-LEN.
+           MOVE 6                     TO MT-CURR-READ-LEN.
+           DISPLAY MT-MTR-ID.
+      *     SET INDICATORS TO NON-NULL VALUES
+           MOVE 0                     TO MT-CUST-ID-IND.
+           MOVE 0                     TO MT-MTR-ID-IND.
+           MOVE 0                     TO MT-PREV-READ-IND.
+           MOVE 0                     TO MT-CURR-READ-IND.
+           DISPLAY 'ATTEMPTING METER:' MT-MTR-ID ' CUST:' MT-CUST-ID.
 
-           COMPUTE MTR-PREV-READ = FUNCTION NUMVAL(IN-PREV-READ)
-           COMPUTE MTR-CURR-READ = FUNCTION NUMVAL(IN-CURR-READ)
-
-           DISPLAY 'ATTEMPTING METER FOR CUST: ' MTR-CUST-ID
-                   ' PREV READ: ' MTR-PREV-READ
-                   ' CURR READ: ' MTR-CURR-READ.
-
-           WRITE MO01-METER-RECORD
-               INVALID KEY
-                   IF WS-KSDS-STATUS = '22'
-                      DISPLAY 'DUPLICATE KEY DETECTED: ' MTR-CUST-ID
-                              ' - RETRYING...'
-                      ADD 1 TO WS-DUP-CTR
-                      ADD 1 TO WS-RETRY-CTR
-                   ELSE
-                      DISPLAY 'WRITE ERROR - STATUS: ' WS-KSDS-STATUS
-                   END-IF
-               NOT INVALID KEY
-                   MOVE '00' TO WS-KSDS-STATUS
-                   ADD 1 TO WS-WRITE-CTR
-           END-WRITE.
+           EXEC SQL  INSERT INTO POMS_METER
+                     VALUES (:MT-CUST-ID,
+                             :MT-MTR-ID,
+                             :MT-PREV-READ,
+                             :MT-CURR-READ
+                             )
+           END-EXEC.
+           MOVE SQLCODE                TO WS-SQL-CODE.
+           EVALUATE TRUE
+               WHEN SQL-IO-STATUS
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'METER INSERTED', ' ', MT-MTR-ID
+                    DISPLAY ' -------------------------------------'
+                    ADD 1  TO WS-WRITE-CTR
+               WHEN SQL-DUP-ROW
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'METER EXISTS  ', ' ', MT-MTR-ID
+                    DISPLAY ' -------------------------------------'
+                    ADD 1  TO WS-DUP-CTR
+               WHEN OTHER
+                    DISPLAY ' -------------------------------------'
+                    DISPLAY 'ERROR INSERTING METER',  ':', WS-SQL-CODE
+                    DISPLAY 'METER ID: ', MT-MTR-ID
+                    DISPLAY ' -------------------------------------'
+                    CALL 'DSNTIAR' USING SQLCA
+                    ADD 1 TO WS-ERROR-CTR
+           END-EVALUATE.
 
        9000-TERMINATE   SECTION.
+
+           CLOSE  MI01-CUSTOMER-KSDS,
+                  TI01-METER-FILE,
+                  TO01-METER-ERR.
+           EXEC SQL
+               COMMIT
+           END-EXEC.
 
            DISPLAY '----------------------------------------'
            DISPLAY ' INPUT RECORDS PROCESSED  ',  WS-READ-CTR
@@ -287,17 +293,12 @@
            DISPLAY ' ERROR RECORDS            ',  WS-ERROR-CTR
            DISPLAY '----------------------------------------'
 
-           CLOSE  MI01-CUSTOMER-KSDS,
-                  TI01-METER-FILE,
-                  TO01-METER-ERR,
-                  MO01-METER-KSDS.
-
            DISPLAY '----------------------------------------'
            DISPLAY 'CUSTOMER FILE      IS CLOSED          '
            DISPLAY 'METER INPUT FILE   IS CLOSED          '
-           DISPLAY 'METER MASTER KSDS  IS CLOSED          '
            DISPLAY 'METER ERROR FILE   IS CLOSED          '
            DISPLAY '----------------------------------------'
+
 
            STOP RUN.
 
